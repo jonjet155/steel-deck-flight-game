@@ -178,7 +178,7 @@ function update(dt) {
       game.celebrationFired = true;
       spawnFirework(particles, -45, CFG.deckY + 68, c0.z + 30, [1, 0.55, 0.15]);
       spawnFirework(particles, 40, CFG.deckY + 82, c0.z - 10, [0.2, 0.9, 0.9]);
-      spawnFirework(particles, 0, CFG.deckY + 60, c0.z + 55, [1, 0.8, 0.3]);
+      spawnFirework(particles, 78, CFG.deckY + 72, c0.z - 38, [1, 0.8, 0.3]);
       spawnEmbers(particles, 0, CFG.deckY + 70, plane.pos[2], 26);
     } else if (game.celebration > 1 && Math.floor(game.celebration) !== game.celebrationLast) {
       game.celebrationLast = Math.floor(game.celebration);
