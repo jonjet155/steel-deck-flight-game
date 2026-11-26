@@ -297,7 +297,10 @@ function makeBolt(plane) {
   let x = bx, y = 270;
   pts.push([x, y, bz]);
   while (y > 60) {
-    x += (rng() - 0.5) * 70;
+    // zigzag with mean-reversion toward the anchor x: the bolt wanders but
+    // never drifts across the frame (a stray slash in a corner, or over the
+    // HUD text) — it stays a centre-frame strike beside the plane
+    x += (bx - x) * 0.35 + (rng() - 0.5) * 70;
     y -= 34 + rng() * 26;
     pts.push([x, Math.max(55, y), bz + (rng() - 0.5) * 20]);
   }
