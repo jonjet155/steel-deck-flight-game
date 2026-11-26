@@ -61,10 +61,7 @@ export function makeRenderer(canvas) {
     };
     quad([x0, y1, z], [x1, y1, z], [x1, y0 + 60, z], [x0, y0 + 60, z], top, mid);
     quad([x0, y0 + 60, z], [x1, y0 + 60, z], [x1, y0, z], [x0, y0, z], mid, sun);
-    // sun disc glow (bright orange quad, ahead of camera)
-    const sx = eye[0] + 220, sy = 40, r = 90;
-    mesh.positions.push(sx - r, sy - r, z + 5, sx + r, sy - r, z + 5, sx + r, sy + r, z + 5, sx - r, sy - r, z + 5, sx + r, sy + r, z + 5, sx - r, sy + r, z + 5);
-    for (let i = 0; i < 6; i++) mesh.colors.push(1.0, 0.75, 0.35);
+    // (no square sun disc — the orange horizon band carries the sunset; a quad sun reads as a box)
     gl.disable(gl.DEPTH_TEST);
     drawMesh(mesh, mvp, 1.15);
     gl.enable(gl.DEPTH_TEST);

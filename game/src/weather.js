@@ -6,8 +6,8 @@ export function makeWeather(seed) {
   const clouds = [];
   for (let i = 0; i < 26; i++) {
     clouds.push({
-      x: randRange(rng, -900, 900), y: randRange(rng, 190, 320), z: randRange(rng, -900, 900),
-      s: randRange(rng, 22, 55), speed: randRange(rng, 2, 7), lit: rng() > 0.5,
+      x: randRange(rng, -900, 900), y: randRange(rng, 260, 380), z: randRange(rng, -900, 900),
+      s: randRange(rng, 12, 30), speed: randRange(rng, 2, 7), lit: rng() > 0.5,
     });
   }
   const rain = [];

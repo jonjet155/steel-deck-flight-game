@@ -205,11 +205,11 @@ function drawMapScreen() {
   [{ id: 'camar7' }, { id: 'rajawali9' }, { id: 'albatros3' }].forEach((p, i) => {
     const def = [{ name: 'CAMAR-7', role: 'Light Interceptor' }, { name: 'RAJAWALI-9', role: 'Strike' }, { name: 'ALBATROS-3', role: 'Heavy Lifter' }][i];
     const y = 160 + i * 62;
-    hudCtx.fillStyle = 'rgba(125,249,255,0.08)'; hudCtx.fillRect(660, y, 300, 50);
+    hudCtx.fillStyle = 'rgba(125,249,255,0.08)'; hudCtx.fillRect(660, y, 560, 50);
     hudCtx.fillStyle = '#7df9ff'; hudCtx.font = 'bold 22px monospace';
     hudCtx.fillText(def.name, 676, y + 30);
     hudCtx.fillStyle = '#bfefff'; hudCtx.font = '17px monospace';
-    hudCtx.fillText(def.role, 820, y + 30);
+    hudCtx.fillText(def.role, 860, y + 30);
   });
   // carrier diagram
   hudCtx.fillStyle = '#ffb43c'; hudCtx.font = 'bold 28px monospace';
@@ -219,8 +219,8 @@ function drawMapScreen() {
   hudCtx.fillStyle = '#2eff5e'; hudCtx.fillRect(900, 400, 10, 90);
   hudCtx.fillStyle = '#ffffff'; hudCtx.font = 'bold 18px monospace';
   hudCtx.fillText('WIRE 1', 700, 425); hudCtx.fillText('WIRE 2', 800, 425); hudCtx.fillText('WIRE 3 PERFECT +250', 920, 425);
-  hudCtx.fillStyle = '#bfefff'; hudCtx.font = '19px monospace';
-  hudCtx.fillText('FLOLS meatball: RED low  •  AMBER on glide  •  GREEN high', 660, 530);
+  hudCtx.fillStyle = '#bfefff'; hudCtx.font = '18px monospace';
+  hudCtx.fillText('FLOLS: RED low  •  AMBER on glide  •  GREEN high', 660, 530);
   // 12 upgrades
   hudCtx.fillStyle = '#ffb43c'; hudCtx.font = 'bold 28px monospace';
   hudCtx.fillText('12 UPGRADES', 40, 560);

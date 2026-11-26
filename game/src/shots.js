@@ -17,8 +17,10 @@ export function applyShot(game, params) {
   } else if (shot === 'trap') {
     gs.state = 'play';
     gs.sortieIdx = 3; // TRAP FINALE
-    plane.pos = [1, 22, 40];
-    plane.heading = 0; plane.pitch = -0.06; plane.bank = 0.04;
+    // staged on final approach: 150 out, 48 m up — carrier deck + FLOLS + superstructure all in frame,
+    // plane large in the foreground, no near-field clutter between camera and plane
+    plane.pos = [0, 48, -150];
+    plane.heading = 0; plane.pitch = -0.05; plane.bank = 0.05;
     plane.speed = 95; plane.throttle = 0.45; plane.fuel = 41; plane.hookDown = true;
     game.carrierT = 0;
     game.trapStaged = true;
