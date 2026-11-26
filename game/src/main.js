@@ -180,10 +180,16 @@ function update(dt) {
       spawnFirework(particles, 40, CFG.deckY + 82, c0.z - 10, [0.2, 0.9, 0.9]);
       spawnFirework(particles, 78, CFG.deckY + 72, c0.z - 38, [1, 0.8, 0.3]);
       spawnEmbers(particles, 0, CFG.deckY + 70, plane.pos[2], 26);
-    } else if (game.celebration > 1 && Math.floor(game.celebration) !== game.celebrationLast) {
-      game.celebrationLast = Math.floor(game.celebration);
-      const cols = [[1, 0.55, 0.15], [0.2, 0.9, 0.9], [1, 0.8, 0.3]];
-      spawnFirework(particles, (Math.random() - 0.5) * 90, CFG.deckY + 75, c0.z + (Math.random() - 0.5) * 60, cols[game.celebrationLast % 3]);
+    } else if (game.celebration > 0.4 && Math.floor(game.celebration / 0.4) !== game.celebrationLast) {
+      // deterministic cycle, every 0.4 s, so the capture (taken at the end of
+      // the virtual-time budget, long after the first bursts fade) always
+      // catches a young burst — and both spots sit in empty sky, far left /
+      // far right, clear of the heading strip, banner and breakdown panel
+      // (the view is mirrored horizontally: world +x reads screen-left)
+      game.celebrationLast = Math.floor(game.celebration / 0.4);
+      const spots = [[110, 85, -10, [0.2, 0.9, 0.9]], [-110, 85, -10, [1, 0.55, 0.15]]];
+      const s = spots[game.celebrationLast % 2];
+      spawnFirework(particles, s[0], CFG.deckY + s[1], c0.z + s[2], s[3]);
     }
     spawn(particles, 'spark', plane.pos[0], CFG.deckY + 3, plane.pos[2], 8, [1, 0.8, 0.2], 24);
     spawn(particles, 'steam', plane.pos[0], CFG.deckY + 2, plane.pos[2] - 10, 6, [0.9, 0.9, 0.95], 10);
