@@ -7,7 +7,7 @@ export function makeWeather(seed) {
   for (let i = 0; i < 26; i++) {
     clouds.push({
       x: randRange(rng, -900, 900), y: randRange(rng, 260, 380), z: randRange(rng, -900, 900),
-      s: randRange(rng, 12, 30), speed: randRange(rng, 2, 7), lit: rng() > 0.5,
+      s: randRange(rng, 10, 24), speed: randRange(rng, 2, 7), lit: rng() > 0.5,
     });
   }
   const rain = [];
@@ -29,7 +29,7 @@ export function updateWeather(w, dt, t, planePos) {
     w.gust = [(Math.random() - 0.5) * 14, (Math.random() - 0.5) * 6];
   }
   w.flashT -= dt;
-  if (w.flashT <= 0) { w.flash = 1; w.flashT = 3 + Math.random() * 6; }
+  if (w.flashT <= 0) { w.flash = 1; w.flashT = 3 + Math.random() * 6; w.newFlash = true; }
   if (w.flash > 0) w.flash = Math.max(0, w.flash - dt * 2.2);
   return w;
 }

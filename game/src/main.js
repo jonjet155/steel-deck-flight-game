@@ -105,6 +105,9 @@ function update(dt) {
   gs.time += dt;
   game.carrierT += dt;
   updateWeather(weather, dt, gs.time, plane.pos);
+  if (weather.newFlash) { weather.newFlash = false; game.bolt = makeBolt(plane); audio.thunder(); }
+  if (weather.flash < 0.3) game.bolt = null;
+  if (game.stormStaged && weather.flash < 0.55) weather.flash = 0.55;
   updateParticles(particles, dt);
   if (gs.popupT > 0) gs.popupT -= dt;
   if (shake > 0) shake = Math.max(0, shake - dt * 22);
@@ -244,6 +247,49 @@ function drawMapScreen() {
   }
 }
 
+function buildRainMesh(weather, plane) {
+  // rain streaks: short vertical slivers around the plane
+  const mesh = { positions: [], colors: [] };
+  const col = [0.75, 0.85, 1.0];
+  for (const r of weather.rain) {
+    const dx = r.x - plane.pos[0], dz = r.z - plane.pos[2];
+    if (Math.abs(dx) > 160 || Math.abs(dz) > 160) continue;
+    const x = r.x, y = r.y, z = r.z, w = 0.35, l = 7;
+    mesh.positions.push(x - w, y, z, x + w, y, z, x, y - l, z);
+    for (let i = 0; i < 3; i++) mesh.colors.push(...col);
+  }
+  return mesh;
+}
+
+function buildBoltMesh(bolt) {
+  // lightning bolt: a jagged ribbon of bright quads
+  const mesh = { positions: [], colors: [] };
+  if (!bolt) return mesh;
+  const col = [1.0, 0.95, 0.75];
+  for (let i = 0; i < bolt.length - 1; i++) {
+    const a = bolt[i], b = bolt[i + 1], w = 1.6;
+    mesh.positions.push(a[0] - w, a[1], a[2], a[0] + w, a[1], a[2], b[0] + w, b[1], b[2]);
+    mesh.positions.push(a[0] - w, a[1], a[2], b[0] + w, b[1], b[2], b[0] - w, b[1], b[2]);
+    for (let j = 0; j < 6; j++) mesh.colors.push(...col);
+  }
+  return mesh;
+}
+
+function makeBolt(plane) {
+  const rng = Math.random;
+  const bx = plane.pos[0] + (rng() - 0.5) * 300;
+  const bz = plane.pos[2] + 250 + rng() * 250;
+  const pts = [];
+  let x = bx, y = 320;
+  pts.push([x, y, bz]);
+  while (y > 60) {
+    x += (rng() - 0.5) * 36;
+    y -= 34 + rng() * 26;
+    pts.push([x, Math.max(55, y), bz + (rng() - 0.5) * 20]);
+  }
+  return pts;
+}
+
 function frame(now) {
   const dt = Math.min(0.05, (now - lastT) / 1000 || 0.016);
   lastT = now;
@@ -264,6 +310,8 @@ function frame(now) {
       { mesh: crewMesh, bright: 1.2 },
       ...cloudMeshes.map((m) => ({ mesh: m, bright: 1.0 })),
       ...stormMeshes.map((m) => ({ mesh: m, bright: 1.0 })),
+      { mesh: buildRainMesh(weather, plane), bright: 1.2 },
+      { mesh: buildBoltMesh(game.bolt), bright: 1.6 },
       { mesh: particlesMesh(particles), bright: 1.3 },
     ];
     if (renderer) renderer.render({ plane, t: gs.time, meshes, flash: weather.flash, shake });
