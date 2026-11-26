@@ -6,7 +6,7 @@ import { buildSea, buildIsland, buildLighthouse, buildStrip, ISLANDS, STRIP, LIG
 import { buildCarrierMesh, buildCrewMesh, carrierState, flolsState, checkTrap } from './carrier.js';
 import { SORTIES, makeStormCells, BOSSES, makeGameState } from './missions.js';
 import { makeWeather, updateWeather, cellTurbulence } from './weather.js';
-import { makeParticles, spawn, updateParticles, particlesMesh, showPopup } from './particles.js';
+import { makeParticles, spawn, spawnFirework, spawnEmbers, updateParticles, particlesMesh, showPopup } from './particles.js';
 import { makeAudio } from './audio.js';
 import { drawHUD } from './hud.js';
 import { makeRenderer } from './render.js';
@@ -89,6 +89,20 @@ function trapLanding() {
     audio.clang();
     spawn(particles, 'spark', plane.pos[0], CFG.deckY + 3, plane.pos[2], 26, [1, 0.8, 0.2], 30);
     spawn(particles, 'steam', plane.pos[0], CFG.deckY + 2, plane.pos[2] - 10, 18, [0.9, 0.9, 0.95], 12);
+    // Pilotwings-style breakdown: wire 50 + speed 20 + angle 20 + centreline 10
+    const wirePts = hit.wire === 3 ? 50 : hit.wire === 2 ? 40 : 30;
+    const speedPts = Math.max(0, 20 - Math.round(Math.abs(plane.speed - 95) / 3));
+    const anglePts = Math.max(0, 20 - Math.round(Math.abs(plane.bank) * 30 + Math.abs(plane.pitch) * 20));
+    const centrePts = Math.max(0, 10 - Math.round(Math.abs(plane.pos[0])));
+    gs.breakdown = { wire: wirePts, speed: speedPts, angle: anglePts, centre: centrePts, total: wirePts + speedPts + anglePts + centrePts };
+    // celebration: fireworks over the deck + ember confetti + cheering crew
+    const c0 = carrierState(game.carrierT);
+    const fwCols = [[1, 0.55, 0.15], [0.2, 0.9, 0.9], [1, 0.8, 0.3]];
+    const nFw = hit.wire === 3 ? 3 : 1;
+    for (let i = 0; i < nFw; i++) {
+      spawnFirework(particles, plane.pos[0] + (i - 1) * 45, CFG.deckY + 90 + i * 18, c0.z + 20 - i * 30, fwCols[i % 3]);
+    }
+    if (hit.wire === 3) spawnEmbers(particles, plane.pos[0], CFG.deckY + 70, plane.pos[2], 26);
     if (hit.wire === 3) showPopup(gs, 'WIRE 3 — PERFECT +250', 'TRAP! Elang Badai is home.');
     else showPopup(gs, `WIRE ${hit.wire} — TRAP +${pts}`, 'Good trap. Deck crew cheers.');
     gs.state = 'trapped';
@@ -150,11 +164,27 @@ function update(dt) {
       gs.state = 'crashed'; showPopup(gs, 'CRASHED — OUT OF FUEL', 'Ditched in the Ember Sea.');
     }
   }
-  // trap staged screenshot: freeze the popup
+  // trap staged screenshot: freeze the popup + perfect breakdown + celebration
   if (game.trapStaged && gs.state === 'play') {
     showPopup(gs, 'WIRE 3 — PERFECT +250', 'TRAP! Elang Badai is home.');
     gs.popupT = 99;
     gs.score = 250;
+    gs.breakdown = { wire: 50, speed: 18, angle: 19, centre: 10, total: 97 };
+    // staged fireworks: one burst per colour on the first frames (so the
+    // capture always catches them mid-burst), then one fresh burst per second
+    game.celebration = (game.celebration || 0) + dt;
+    const c0 = carrierState(game.carrierT);
+    if (!game.celebrationFired) {
+      game.celebrationFired = true;
+      spawnFirework(particles, -45, CFG.deckY + 95, c0.z + 30, [1, 0.55, 0.15]);
+      spawnFirework(particles, 40, CFG.deckY + 115, c0.z - 10, [0.2, 0.9, 0.9]);
+      spawnFirework(particles, 0, CFG.deckY + 80, c0.z + 55, [1, 0.8, 0.3]);
+      spawnEmbers(particles, 0, CFG.deckY + 70, plane.pos[2], 26);
+    } else if (game.celebration > 1 && Math.floor(game.celebration) !== game.celebrationLast) {
+      game.celebrationLast = Math.floor(game.celebration);
+      const cols = [[1, 0.55, 0.15], [0.2, 0.9, 0.9], [1, 0.8, 0.3]];
+      spawnFirework(particles, (Math.random() - 0.5) * 90, CFG.deckY + 100, c0.z + (Math.random() - 0.5) * 60, cols[game.celebrationLast % 3]);
+    }
     spawn(particles, 'spark', plane.pos[0], CFG.deckY + 3, plane.pos[2], 8, [1, 0.8, 0.2], 24);
     spawn(particles, 'steam', plane.pos[0], CFG.deckY + 2, plane.pos[2] - 10, 6, [0.9, 0.9, 0.95], 10);
   }

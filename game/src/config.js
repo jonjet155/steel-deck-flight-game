@@ -26,13 +26,19 @@ export const CFG = {
 };
 
 export const PALETTE = {
-  skyTop: [0.16, 0.10, 0.38],
+  // EMBER DUSK identity: deep teal zenith -> violet mid -> ember-orange
+  // horizon. The same ember + teal pair recurs in deck lights, livery and
+  // HUD so the game is recognisable in one glance at thumbnail size.
+  skyTop: [0.04, 0.20, 0.30],
   skyMid: [0.45, 0.22, 0.45],
-  sunset: [1.0, 0.55, 0.18],
+  sunset: [1.0, 0.45, 0.08],
   sunsetSoft: [1.0, 0.72, 0.38],
-  seaDeep: [0.05, 0.13, 0.30],
-  seaLight: [0.12, 0.30, 0.48],
-  deckGrey: [0.32, 0.34, 0.38],
+  teal: [0.05, 0.55, 0.58],
+  tealDeep: [0.03, 0.28, 0.34],
+  ember: [1.0, 0.45, 0.08],
+  seaDeep: [0.03, 0.20, 0.28],
+  seaLight: [0.10, 0.38, 0.46],
+  deckGrey: [0.30, 0.36, 0.40],
   deckDark: [0.20, 0.21, 0.25],
   deckLine: [1.0, 0.75, 0.20],
   amber: [1.0, 0.72, 0.15],

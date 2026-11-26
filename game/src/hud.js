@@ -122,4 +122,36 @@ export function drawHUD(ctx, W, H, gs, plane, flols, objective) {
     ctx.globalAlpha = 1;
   }
   // (control hints live on the title screen; the bottom edge stays clean)
+  // Landing breakdown (Pilotwings-style) — shown after a trap, right side,
+  // clear of the plane, the FLOLS panel and the popup. Each line is a scored
+  // skill, so the celebration is a readable result, not just a banner.
+  const bd = gs.breakdown;
+  if (bd) {
+    const bx = W - 316, by = 96, bw = 300, bh = 216;
+    panel(bx, by, bw, bh);
+    ctx.fillStyle = '#ffb43c';
+    ctx.font = 'bold 22px monospace';
+    ctx.fillText('LANDING BREAKDOWN', bx + 16, by + 28);
+    const rows = [
+      ['WIRE', bd.wire, 50],
+      ['SPEED', bd.speed, 20],
+      ['ANGLE', bd.angle, 20],
+      ['CENTRELINE', bd.centre, 10],
+    ];
+    rows.forEach(([label, val, max], i) => {
+      const ry = by + 58 + i * 34;
+      ctx.fillStyle = '#bfefff';
+      ctx.font = 'bold 18px monospace';
+      ctx.fillText(label, bx + 16, ry);
+      ctx.fillStyle = '#20264a';
+      ctx.fillRect(bx + 150, ry - 10, 100, 16);
+      ctx.fillStyle = val >= max ? '#2eff5e' : '#ffb43c';
+      ctx.fillRect(bx + 150, ry - 10, 100 * (val / max), 16);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(String(val), bx + 258, ry);
+    });
+    ctx.fillStyle = '#2eff5e';
+    ctx.font = 'bold 24px monospace';
+    ctx.fillText('TOTAL ' + bd.total + '/100', bx + 16, by + 196);
+  }
 }

@@ -37,6 +37,16 @@ export function buildCarrierMesh(t) {
     tri(mesh, [-1.2, y + 2.2, z], [1.2, y + 2.2, z], [1.2, y + 2.2, z + 9], PALETTE.amber);
     tri(mesh, [-1.2, y + 2.2, z], [1.2, y + 2.2, z + 9], [-1.2, y + 2.2, z + 9], PALETTE.amber);
   }
+  // deck edge stripes — ember-orange lines running the full deck length,
+  // the carrier's signature: no other deck in the field is edged in ember
+  tri(mesh, [-W / 2 + 1, y + 2.1, z0 + 4], [-W / 2 + 3.4, y + 2.1, z0 + 4], [-W / 2 + 3.4, y + 2.1, z1 - 4], PALETTE.ember);
+  tri(mesh, [-W / 2 + 1, y + 2.1, z0 + 4], [-W / 2 + 3.4, y + 2.1, z1 - 4], [-W / 2 + 1, y + 2.1, z1 - 4], PALETTE.ember);
+  tri(mesh, [W / 2 - 3.4, y + 2.1, z0 + 4], [W / 2 - 1, y + 2.1, z0 + 4], [W / 2 - 1, y + 2.1, z1 - 4], PALETTE.ember);
+  tri(mesh, [W / 2 - 3.4, y + 2.1, z0 + 4], [W / 2 - 1, y + 2.1, z1 - 4], [W / 2 - 3.4, y + 2.1, z1 - 4], PALETTE.ember);
+  // landing chevrons — big amber arrows on the strip pointing at the wires
+  for (const cz of [c.z - 10, c.z + 10]) {
+    tri(mesh, [-6, y + 2.2, cz - 6], [0, y + 2.2, cz + 6], [6, y + 2.2, cz - 6], PALETTE.amber);
+  }
   // deck edge lights (amber, both sides)
   for (let z = z0 + 6; z < z1; z += 14) {
     box(mesh, -W / 2 - 1, y + 2, z, -W / 2 + 1, y + 3.4, z + 2, PALETTE.amber);
@@ -45,6 +55,26 @@ export function buildCarrierMesh(t) {
   // island superstructure (starboard)
   box(mesh, W / 2 - 14, y + 2, c.z - 30, W / 2 - 2, y + 26, c.z + 18, [0.55, 0.57, 0.62]);
   box(mesh, W / 2 - 12, y + 26, c.z - 22, W / 2 - 4, y + 34, c.z + 10, [0.35, 0.37, 0.42]);
+  // hull number "07" on the superstructure's stern face (faces the
+  // approaching plane, so the trap shot carries the ship's identity)
+  const nz0 = c.z - 31, nz1 = c.z - 30;
+  const d0x = W / 2 - 13, d7x = W / 2 - 6.5;
+  // "0": outline of four bars
+  box(mesh, d0x, y + 8, nz0, d0x + 1.6, y + 22, nz1, PALETTE.amber);
+  box(mesh, d0x + 4.4, y + 8, nz0, d0x + 6, y + 22, nz1, PALETTE.amber);
+  box(mesh, d0x, y + 20.4, nz0, d0x + 6, y + 22, nz1, PALETTE.amber);
+  box(mesh, d0x, y + 8, nz0, d0x + 6, y + 9.6, nz1, PALETTE.amber);
+  // "7": top bar + diagonal down to the left
+  box(mesh, d7x, y + 20.4, nz0, d7x + 6, y + 22, nz1, PALETTE.amber);
+  box(mesh, d7x + 4.4, y + 14, nz0, d7x + 6, y + 20.4, nz1, PALETTE.amber);
+  box(mesh, d7x + 1.5, y + 8, nz0, d7x + 3.1, y + 14, nz1, PALETTE.amber);
+  // funnel with an ember band — the superstructure's second signature
+  box(mesh, W / 2 - 12, y + 34, c.z - 18, W / 2 - 5, y + 44, c.z - 8, [0.30, 0.32, 0.36]);
+  box(mesh, W / 2 - 12, y + 40, c.z - 18, W / 2 - 5, y + 42.5, c.z - 8, PALETTE.ember);
+  // teal floodlights on the superstructure's port face (facing the deck)
+  for (let z = c.z - 24; z < c.z + 14; z += 12) {
+    box(mesh, W / 2 - 14.6, y + 14, z, W / 2 - 14, y + 17, z + 4, PALETTE.teal);
+  }
   // bridge windows — glowing cyan
   box(mesh, W / 2 - 12.5, y + 28, c.z - 20, W / 2 - 3.5, y + 31, c.z + 8, PALETTE.cyan);
   // mast + radar

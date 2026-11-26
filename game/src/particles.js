@@ -35,3 +35,30 @@ export function showPopup(gs, text, sub) {
   gs.popup = { text, sub: sub || '' };
   gs.popupT = 2.2;
 }
+
+// Celebration firework: a radial burst high over the deck. Bright, big,
+// slow-falling — the trap moment's payoff, visible in one screenshot frame.
+export function spawnFirework(p, x, y, z, color) {
+  for (let i = 0; i < 42; i++) {
+    const a = (i / 42) * Math.PI * 2 + Math.random() * 0.3;
+    const sp = 14 + Math.random() * 22;
+    p.list.push({
+      kind: 'firework', x, y, z,
+      vx: Math.cos(a) * sp, vy: Math.sin(a) * sp * 0.7 + 8, vz: (Math.random() - 0.5) * sp,
+      life: 1.2 + Math.random() * 0.9, max: 2.1, color, size: 2.2 + Math.random() * 2.4,
+    });
+  }
+  if (p.list.length > 500) p.list.splice(0, p.list.length - 500);
+}
+
+// Ember confetti: slow golden drift down over the deck after a perfect trap.
+export function spawnEmbers(p, x, y, z, n) {
+  for (let i = 0; i < n; i++) {
+    p.list.push({
+      kind: 'ember', x: x + (Math.random() - 0.5) * 40, y: y + Math.random() * 30, z: z + (Math.random() - 0.5) * 40,
+      vx: (Math.random() - 0.5) * 4, vy: -3 - Math.random() * 4, vz: (Math.random() - 0.5) * 4,
+      life: 1.5 + Math.random(), max: 2.5, color: [1, 0.62, 0.15], size: 1.6 + Math.random() * 1.8,
+    });
+  }
+  if (p.list.length > 500) p.list.splice(0, p.list.length - 500);
+}
