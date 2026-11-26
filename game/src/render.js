@@ -52,8 +52,10 @@ export function makeRenderer(canvas) {
   // Positioned ahead of the camera ALONG ITS HEADING, so the wall always
   // covers the whole frustum whatever way the plane points — a fixed +z wall
   // leaves a bare strip at the frame edge on a diagonal heading.
-  function drawSky(mvp, eye, heading) {
-    const top = PALETTE.skyTop, mid = PALETTE.skyMid, sun = PALETTE.sunset;
+  function drawSky(mvp, eye, heading, tint) {
+    const top = (tint && tint.top) || PALETTE.skyTop;
+    const mid = (tint && tint.mid) || PALETTE.skyMid;
+    const sun = (tint && tint.sun) || PALETTE.sunset;
     // horizon band mesh: a wide strip ahead of the camera
     const mesh = { positions: [], colors: [] };
     const fx = Math.sin(heading), fz = Math.cos(heading);
@@ -96,69 +98,161 @@ export function makeRenderer(canvas) {
       mesh.positions.push(...a, ...b, ...c);
       for (let i = 0; i < 3; i++) mesh.colors.push(...col);
     };
-    const c = plane.def.color, dark = [0.25, 0.28, 0.33];
-    // fuselage: nose at +z (forward), tail at -z — long dart
-    tri([0, 0.4, 7], [-1.1, 0, -6], [1.1, 0, -6], c);
-    tri([0, 0.4, 7], [1.1, 0, -6], [0, -0.9, -5], dark);
-    tri([0, 0.4, 7], [0, -0.9, -5], [-1.1, 0, -6], dark);
-    // canopy — bright cyan
-    tri([0, 1.5, 3.4], [-0.8, 0.4, 4.6], [0.8, 0.4, 4.6], PALETTE.cyan);
-    tri([0, 1.5, 3.4], [0.8, 0.4, 1.2], [-0.8, 0.4, 1.2], PALETTE.cyan);
-    // main wings — wide, amber tips
-    tri([-1, 0, 1], [-8.5, -0.3, -3.5], [-8.5, -0.3, -1.5], c);
-    tri([-1, 0, 1], [-8.5, -0.3, -1.5], [-1, 0, -1.5], c);
-    tri([1, 0, 1], [8.5, -0.3, -1.5], [8.5, -0.3, -3.5], c);
-    tri([1, 0, 1], [1, 0, -1.5], [8.5, -0.3, -1.5], c);
+    const quad = (a, b, c, d, col) => { tri(a, b, c, col); tri(a, c, d, col); };
+    const boxAt = (x0, y0, z0, x1, y1, z1, col) => {
+      const A = [x0, y0, z0], B = [x1, y0, z0], C = [x1, y1, z0], D = [x0, y1, z0];
+      const E = [x0, y0, z1], F = [x1, y0, z1], G = [x1, y1, z1], H = [x0, y1, z1];
+      quad(A, B, C, D, col); quad(F, E, H, G, col); quad(E, A, D, H, col);
+      quad(B, F, G, C, col); quad(D, C, G, H, col);
+    };
+    const c = plane.def.color;
+    const top = [0.84, 0.87, 0.90];   // fuselage top, sunlit
+    const belly = [0.22, 0.25, 0.30];  // fuselage belly, shadowed
+    const canopyCol = [0.05, 0.08, 0.15]; // dark canopy glass
+    // Fuselage: a faceted BODY with real volume — 5 stations, nose at +z.
+    // Top faces light, side faces squadron grey, belly dark: from the chase
+    // view the tail reads as a rounded body, never a flat paper dart.
+    // stations: [z, halfW, topY, botY]
+    const st = [
+      [7.2, 0.12, 0.42, 0.38],
+      [4.5, 0.95, 1.00, -0.55],
+      [0.0, 1.35, 1.10, -0.95],
+      [-5.0, 0.95, 0.80, -0.75],
+      [-6.5, 0.55, 0.50, -0.50],
+    ];
+    const ring = (s) => {
+      const [z, w, ty, by] = s;
+      const span = ty - by;
+      return {
+        T: [0, ty, z],
+        UL: [-w, ty - span * 0.28, z],
+        LL: [-w, by + span * 0.28, z],
+        B: [0, by, z],
+        LR: [w, by + span * 0.28, z],
+        UR: [w, ty - span * 0.28, z],
+      };
+    };
+    for (let i = 0; i < st.length - 1; i++) {
+      const A = ring(st[i]), B = ring(st[i + 1]);
+      const topCol = i === 0 ? PALETTE.ember : top; // ember nose cone
+      quad(A.T, B.T, B.UR, A.UR, topCol);
+      quad(A.T, A.UL, B.UL, B.T, topCol);
+      quad(A.UL, A.LL, B.LL, B.UL, c);
+      quad(A.UR, B.UR, B.LR, A.LR, c);
+      quad(A.LL, A.B, B.B, B.LL, belly);
+      quad(A.B, A.LR, B.LR, B.B, belly);
+    }
+    // dark canopy: a raised dark bump ahead of the wings, with one thin cyan
+    // glint — it reads as glass, not a painted triangle
+    tri([0, 1.78, 2.9], [-0.85, 0.95, 4.6], [0.85, 0.95, 4.6], canopyCol);
+    tri([0, 1.78, 2.9], [0.85, 0.95, 1.2], [-0.85, 0.95, 1.2], canopyCol);
+    tri([0, 1.78, 2.9], [-0.85, 0.95, 1.2], [-0.85, 0.95, 4.6], canopyCol);
+    tri([0, 1.78, 2.9], [0.85, 0.95, 4.6], [0.85, 0.95, 1.2], canopyCol);
+    tri([0, 1.80, 3.7], [-0.20, 1.38, 4.3], [0.20, 1.38, 4.3], PALETTE.cyan);
+    // intakes: dark mouths flanking the fuselage just behind the nose
+    boxAt(1.02, -0.35, 2.2, 1.55, 0.45, 3.8, [0.10, 0.11, 0.14]);
+    boxAt(-1.55, -0.35, 2.2, -1.02, 0.45, 3.8, [0.10, 0.11, 0.14]);
+    // main wings — wide, with real thickness (dark underside) + amber tips
+    quad([-1, 0, 1], [-8.5, -0.3, -3.5], [-8.5, -0.3, -1.5], [-1, 0, -1.5], c);
+    quad([1, 0, 1], [8.5, -0.3, -1.5], [8.5, -0.3, -3.5], [1, 0, -1.5], c);
+    quad([-1, -0.32, 1], [-1, -0.32, -1.5], [-8.5, -0.62, -1.5], [-8.5, -0.62, -3.5], [0.38, 0.40, 0.44]);
+    quad([1, -0.32, 1], [8.5, -0.62, -3.5], [8.5, -0.62, -1.5], [1, -0.32, -1.5], [0.38, 0.40, 0.44]);
     tri([-8.5, -0.3, -3.5], [-9.5, -0.3, -3], [-9.5, -0.3, -1.8], PALETTE.ember);
     tri([8.5, -0.3, -3.5], [9.5, -0.3, -1.8], [9.5, -0.3, -3], PALETTE.ember);
     // ember wingtip bands: full-chord amber on the outer wing, so the
     // wingtips read as orange flashes from the chase view
-    tri([-7.5, -0.3, -3.4], [-8.5, -0.3, -3.5], [-8.5, -0.3, -1.6], PALETTE.amber);
-    tri([-7.5, -0.3, -3.4], [-8.5, -0.3, -1.6], [-7.5, -0.3, -1.6], PALETTE.amber);
-    tri([7.5, -0.3, -3.4], [8.5, -0.3, -1.6], [8.5, -0.3, -3.5], PALETTE.amber);
-    tri([7.5, -0.3, -3.4], [7.5, -0.3, -1.6], [8.5, -0.3, -1.6], PALETTE.amber);
+    quad([-7.5, -0.3, -3.4], [-8.5, -0.3, -3.5], [-8.5, -0.3, -1.6], [-7.5, -0.3, -1.6], PALETTE.amber);
+    quad([7.5, -0.3, -3.4], [8.5, -0.3, -1.6], [8.5, -0.3, -3.5], [7.5, -0.3, -1.6], PALETTE.amber);
+    // red-white roundels on both wings: concentric discs lying on the wing
+    // top surface (y follows the wing slope), visible from the chase view
+    const wingY = (x) => -0.3 * (Math.abs(x) - 1) / 7.5 + 0.05;
+    const roundel = (cx, cz, r) => {
+      const fan = (rr, col, yOff) => {
+        const segs = 10;
+        let prev = null;
+        for (let i = 0; i <= segs; i++) {
+          const a = (i / segs) * Math.PI * 2;
+          const px = cx + Math.cos(a) * rr;
+          const p = [px, wingY(px) + yOff, cz + Math.sin(a) * rr];
+          if (prev) tri([cx, wingY(cx) + yOff, cz], prev, p, col);
+          prev = p;
+        }
+      };
+      fan(r, [0.85, 0.12, 0.12], 0.0);
+      fan(r * 0.62, [0.95, 0.95, 0.92], 0.015);
+      fan(r * 0.28, [0.85, 0.12, 0.12], 0.03);
+    };
+    roundel(-5.2, -2.2, 1.15);
+    roundel(5.2, -2.2, 1.15);
     // tail fins
-    tri([0, 0.4, -6], [-2.6, 0.2, -8.5], [-2.6, 0.2, -6.5], c);
-    tri([0, 0.4, -6], [2.6, 0.2, -6.5], [2.6, 0.2, -8.5], c);
+    quad([0, 0.4, -6], [-2.6, 0.2, -8.5], [-2.6, 0.2, -6.5], [0, 0.4, -6.5], c);
+    quad([0, 0.4, -6], [2.6, 0.2, -6.5], [2.6, 0.2, -8.5], [0, 0.4, -6.5], c);
     tri([0, 0.3, -6], [0, 2.6, -8], [0, 2.6, -6], c);
+    // roundel on both faces of the vertical fin
+    const finRoundel = (sx) => {
+      const fan = (rr, col, xOff) => {
+        const segs = 10;
+        let prev = null;
+        for (let i = 0; i <= segs; i++) {
+          const a = (i / segs) * Math.PI * 2;
+          const p = [sx * xOff, 1.5 + Math.sin(a) * rr, -7.0 + Math.cos(a) * rr];
+          if (prev) tri([sx * xOff, 1.5, -7.0], prev, p, col);
+          prev = p;
+        }
+      };
+      fan(0.85, [0.85, 0.12, 0.12], 0.10);
+      fan(0.55, [0.95, 0.95, 0.92], 0.12);
+      fan(0.25, [0.85, 0.12, 0.12], 0.14);
+    };
+    finRoundel(1);
+    finRoundel(-1);
     // Elang Badai livery, readable from directly behind: amber spine stripe
-    // down the fuselage top (wide at the tail, nearest the chase camera)
-    tri([0, 0.48, 6.5], [-0.55, 0.1, -5.8], [0.55, 0.1, -5.8], PALETTE.amber);
-    // ember nose tip: the nose cone reads orange from every angle
-    tri([0, 0.42, 7.0], [-0.9, 0.05, 5.6], [0.9, 0.05, 5.6], PALETTE.ember);
+    // down the fuselage top, following the top surface station by station
+    for (let i = 1; i < st.length - 1; i++) {
+      const zA = st[i][0], yA = st[i][2] + 0.04;
+      const zB = st[i + 1][0], yB = st[i + 1][2] + 0.04;
+      quad([-0.5, yA, zA], [0.5, yA, zA], [0.5, yB, zB], [-0.5, yB, zB], PALETTE.amber);
+    }
     // deep-teal fuselage band across the spine just behind the canopy —
     // the teal half of the ember-dusk identity, worn by every squadron plane
-    tri([-0.62, 0.30, 1.2], [0.62, 0.30, 1.2], [0.62, 0.30, 2.6], PALETTE.teal);
-    tri([-0.62, 0.30, 1.2], [0.62, 0.30, 2.6], [-0.62, 0.30, 2.6], PALETTE.teal);
+    quad([-0.62, 1.13, 1.2], [0.62, 1.13, 1.2], [0.62, 1.13, 2.6], [-0.62, 1.13, 2.6], PALETTE.teal);
     // tail-fin chevron on both faces of the vertical fin
     tri([0.07, 0.9, -6.3], [0.07, 2.1, -7.7], [0.07, 2.1, -6.5], PALETTE.amber);
     tri([-0.07, 0.9, -6.3], [-0.07, 2.1, -6.5], [-0.07, 2.1, -7.7], PALETTE.amber);
-    // white tail strobe at the fin base
-    tri([-0.5, 0.3, -8.7], [0.5, 0.3, -8.7], [0, 1.3, -8.7], [1, 1, 1]);
-    // propeller disc: a thin dim RING around the nose (the old solid fan
-    // rendered as a giant white balloon swallowing the canopy). A ring reads
-    // as a spinning prop from the chase view while the fuselage and canopy
-    // stay visible through its open centre. Radius 2.3 clears the nose.
-    const segs = 8, rIn = 1.5, rOut = 2.3;
-    for (let i = 0; i < segs; i++) {
-      const a0 = plane.propAngle + (i / segs) * Math.PI * 2;
-      const a1 = plane.propAngle + ((i + 1) / segs) * Math.PI * 2;
-      const q0 = [Math.cos(a0) * rIn, 0.4 + Math.sin(a0) * rIn, 7.6];
-      const q1 = [Math.cos(a1) * rIn, 0.4 + Math.sin(a1) * rIn, 7.6];
-      const p0 = [Math.cos(a0) * rOut, 0.4 + Math.sin(a0) * rOut, 7.6];
-      const p1 = [Math.cos(a1) * rOut, 0.4 + Math.sin(a1) * rOut, 7.6];
-      const shade = i % 2 ? [0.28, 0.28, 0.32] : [0.38, 0.38, 0.42];
-      tri(q0, p0, p1, shade);
-      tri(q0, p1, q1, shade);
+    // small white tail strobe at the fin base
+    tri([-0.35, 0.3, -8.7], [0.35, 0.3, -8.7], [0, 0.9, -8.7], [1, 1, 1]);
+    // propeller disc: a 16-segment spinning fan in mid greys — round, never
+    // a hexagon, never a white balloon; the nose and canopy stay visible
+    // through its darker alternating blades
+    {
+      const segs = 16;
+      let prev = null;
+      for (let i = 0; i <= segs; i++) {
+        const a = plane.propAngle + (i / segs) * Math.PI * 2;
+        const p = [Math.cos(a) * 2.4, 0.4 + Math.sin(a) * 2.4, 7.9];
+        if (prev) {
+          const shade = i % 2 ? [0.30, 0.33, 0.38] : [0.52, 0.55, 0.60];
+          tri([0, 0.4, 7.9], prev, p, shade);
+        }
+        prev = p;
+      }
+      tri([0, 0.4, 8.6], [-0.5, 0.1, 7.9], [0.5, 0.1, 7.9], PALETTE.ember);
     }
-    // nav lights: red port, green starboard — near twice the old size so
-    // they read at thumbnail size from the chase view
-    tri([-9.8, -0.3, -2.4], [-8.2, -0.3, -2.4], [-9, 1.1, -2.4], [1, 0.25, 0.25]);
-    tri([9.8, -0.3, -2.4], [9, 1.1, -2.4], [8.2, -0.3, -2.4], [0.25, 1, 0.4]);
-    // afterburner flame
+    // nav lights: small glowing POINTS at the wingtips, never big triangles
+    const navDot = (x, col) => {
+      const y = -0.3, z = -2.4, s = 0.55;
+      tri([x, y + s, z], [x - s * 0.7, y, z], [x, y - s * 0.6, z], col);
+      tri([x, y + s, z], [x, y - s * 0.6, z], [x + s * 0.7, y, z], col);
+    };
+    navDot(-9.6, [1, 0.2, 0.2]);
+    navDot(9.6, [0.2, 1, 0.35]);
+    // afterburner flame: LAYERED and SHORT — outer ember cone, mid flame,
+    // hot white-yellow core. Never reaches the FUEL HUD box.
     if (plane.afterburner) {
-      tri([0, 0.4, -6.5], [-1.2, 0.4, -12], [1.2, 0.4, -12], [1.0, 0.55, 0.1]);
-      tri([0, 1.2, -6.5], [-0.7, 1.2, -10], [0.7, 1.2, -10], [1.0, 0.85, 0.3]);
+      tri([0, 0.4, -6.5], [-0.9, 0.4, -9.6], [0.9, 0.4, -9.6], [1.0, 0.45, 0.08]);
+      tri([0, 1.1, -6.5], [-0.55, 1.1, -8.8], [0.55, 1.1, -8.8], [1.0, 0.45, 0.08]);
+      tri([0, 0.4, -6.5], [-0.6, 0.4, -8.8], [0.6, 0.4, -8.8], [1.0, 0.75, 0.25]);
+      tri([0, 0.4, -6.5], [-0.32, 0.4, -8.0], [0.32, 0.4, -8.0], [1.0, 0.95, 0.7]);
     }
     return mesh;
   }
@@ -181,7 +275,7 @@ export function makeRenderer(canvas) {
     const view = mat4LookAt(eye, center, [0, 1, 0]);
     const proj = mat4Perspective(deg2rad(62), canvas.width / canvas.height, 0.5, 4000);
     const vp = mat4Mul(proj, view);
-    drawSky(vp, eye, plane.heading);
+    drawSky(vp, eye, plane.heading, scene.tint);
     for (const m of meshes) drawMesh(m.mesh, vp, (m.bright || 1) * bright);
     // plane: model matrix from position + heading + bank + pitch
     let model = mat4Translate(plane.pos[0], plane.pos[1], plane.pos[2]);

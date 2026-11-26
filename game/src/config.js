@@ -61,16 +61,16 @@ export const PLANES = [
 ];
 
 export const UPGRADES = [
-  { id: 'hook', name: 'Arrestor Hook', desc: '+1 wire catch window' },
-  { id: 'catapult', name: 'Catapult Bridle', desc: 'Faster deck launch' },
-  { id: 'tank', name: 'Bigger Tank', desc: '+30 fuel capacity' },
-  { id: 'radar', name: 'Storm Radar', desc: 'See cells on HUD' },
-  { id: 'lights', name: 'Landing Lights', desc: 'Deck glows brighter' },
-  { id: 'gear', name: 'Reinforced Gear', desc: 'Survive hard landings' },
-  { id: 'goggles', name: 'Night Goggles', desc: 'Night patrol vision' },
-  { id: 'radio', name: 'Ship Radio', desc: 'LSO calls out glide' },
-  { id: 'heater', name: 'Cockpit Heater', desc: 'No icing in squall' },
-  { id: 'prop', name: 'Fast Propeller', desc: '+10% climb rate' },
-  { id: 'net', name: 'Cargo Net', desc: 'Carry +1 cargo' },
-  { id: 'hull', name: 'Reinforced Hull', desc: '+1 hull heart' },
+  { id: 'hook', name: 'Arrestor Hook', desc: '+1 wire catch window', price: 150 },
+  { id: 'catapult', name: 'Catapult Bridle', desc: 'Faster deck launch', price: 200 },
+  { id: 'tank', name: 'Bigger Tank', desc: '+30 fuel capacity', price: 250 },
+  { id: 'radar', name: 'Storm Radar', desc: 'See cells on HUD', price: 300 },
+  { id: 'lights', name: 'Landing Lights', desc: 'Deck glows brighter', price: 120 },
+  { id: 'gear', name: 'Reinforced Gear', desc: 'Survive hard landings', price: 180 },
+  { id: 'goggles', name: 'Night Goggles', desc: 'Night patrol vision', price: 220 },
+  { id: 'radio', name: 'Ship Radio', desc: 'LSO calls out glide', price: 100 },
+  { id: 'heater', name: 'Cockpit Heater', desc: 'No icing in squall', price: 80 },
+  { id: 'prop', name: 'Fast Propeller', desc: '+10% climb rate', price: 260 },
+  { id: 'net', name: 'Cargo Net', desc: 'Carry +1 cargo', price: 140 },
+  { id: 'hull', name: 'Reinforced Hull', desc: '+1 hull heart', price: 320 },
 ];

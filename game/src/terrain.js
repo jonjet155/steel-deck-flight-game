@@ -7,19 +7,21 @@ function tri(mesh, a, b, c, color) {
   for (let i = 0; i < 3; i++) mesh.colors.push(...color);
 }
 
-export function buildSea(size, segments) {
+export function buildSea(size, segments, colors) {
   const mesh = { positions: [], colors: [] };
   const rng = makeRng(777);
   const step = size / segments;
+  const deep = (colors && colors.deep) || PALETTE.seaDeep;
+  const light = (colors && colors.light) || PALETTE.seaLight;
   for (let i = 0; i < segments; i++) {
     for (let j = 0; j < segments; j++) {
       const x0 = -size / 2 + i * step, z0 = -size / 2 + j * step;
       const x1 = x0 + step, z1 = z0 + step;
       const w = 0.85 + rng() * 0.15;
       const c = [
-        PALETTE.seaDeep[0] * w + PALETTE.seaLight[0] * (1 - w),
-        PALETTE.seaDeep[1] * w + PALETTE.seaLight[1] * (1 - w),
-        PALETTE.seaDeep[2] * w + PALETTE.seaLight[2] * (1 - w),
+        deep[0] * w + light[0] * (1 - w),
+        deep[1] * w + light[1] * (1 - w),
+        deep[2] * w + light[2] * (1 - w),
       ];
       // faint sunset shimmer near the horizon centre line only
       const cx = (x0 + x1) / 2;

@@ -38,8 +38,10 @@ export function drawHUD(ctx, W, H, gs, plane, flols, objective) {
   }
   ctx.fillStyle = '#ffb43c';
   ctx.fillRect(W / 2 - 2, 14, 4, 12);
-  // 3 — FLOLS meatball near centre
-  const cx = W / 2, cy = H * 0.42;
+  // 3 — FLOLS meatball: shifted right and down from centre so it never
+  // covers the carrier island or the "07" (the island sits left-of-centre
+  // in the chase view); it stays clear of the breakdown panel above it
+  const cx = W / 2 + 280, cy = H * 0.47;
   panel(cx - 150, cy - 46, 300, 92);
   ctx.fillStyle = '#bfefff';
   ctx.font = 'bold 20px monospace';

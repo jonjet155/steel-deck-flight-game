@@ -11,7 +11,7 @@ export function makeWeather(seed) {
     });
   }
   const rain = [];
-  for (let i = 0; i < 320; i++) {
+  for (let i = 0; i < 600; i++) {
     rain.push({ x: randRange(rng, -300, 300), y: randRange(rng, 0, 220), z: randRange(rng, -300, 300), v: randRange(rng, 90, 160) });
   }
   return { clouds, rain, gustT: 0, gust: [0, 0], flash: 0, flashT: 2 + rng() * 3 };

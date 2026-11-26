@@ -80,6 +80,55 @@ export function buildCarrierMesh(t) {
   // mast + radar
   box(mesh, W / 2 - 9, y + 34, c.z - 8, W / 2 - 7, y + 48, c.z - 4, [0.4, 0.42, 0.46]);
   box(mesh, W / 2 - 13, y + 44, c.z - 10, W / 2 - 3, y + 46, c.z - 2, PALETTE.amber);
+  // "HALILINTAR" in big block letters on the port deck, laid along +z
+  // runway-style so the approaching plane reads it: letter top = far (+z)
+  // end, column 0 = viewer's left (+x — the chase view is mirrored).
+  const LETTERS = {
+    H: [[0, 0], [0, 1], [0, 2], [0, 3], [0, 4], [1, 2], [2, 0], [2, 1], [2, 2], [2, 3], [2, 4]],
+    A: [[0, 1], [0, 2], [0, 3], [0, 4], [1, 0], [1, 2], [2, 1], [2, 2], [2, 3], [2, 4]],
+    L: [[0, 0], [0, 1], [0, 2], [0, 3], [0, 4], [1, 4], [2, 4]],
+    I: [[0, 0], [1, 0], [2, 0], [1, 1], [1, 2], [1, 3], [0, 4], [1, 4], [2, 4]],
+    N: [[0, 0], [0, 1], [0, 2], [0, 3], [0, 4], [1, 1], [1, 2], [2, 0], [2, 1], [2, 2], [2, 3], [2, 4]],
+    T: [[0, 0], [1, 0], [2, 0], [1, 1], [1, 2], [1, 3], [1, 4]],
+    R: [[0, 0], [0, 1], [0, 2], [0, 3], [0, 4], [1, 0], [1, 2], [2, 0], [2, 1], [2, 2], [1, 3], [2, 4]],
+  };
+  {
+    const cw = 3.4, cd = 3.4, ch = 0.9, pitch = 21;
+    const word = 'HALILINTAR';
+    const x0 = -25.5, z0 = c.z - 85;
+    [...word].forEach((ch, li) => {
+      const segs = LETTERS[ch];
+      if (!segs) return;
+      const lz = z0 + li * pitch;
+      for (const [col, row] of segs) {
+        const x = x0 + (2 - col) * cw;
+        const z = lz + (4 - row) * cd;
+        box(mesh, x, y + 2.2, z, x + cw * 0.92, y + 2.2 + ch, z + cd * 0.92, PALETTE.amber);
+      }
+    });
+  }
+  // 2 parked aircraft on the starboard deck, folded wings, amber tips —
+  // the deck is a working airfield, not an empty slab
+  const parkedPlane = (x, z, noseDir, col) => {
+    const zA = Math.min(z - 7 * noseDir, z + 7 * noseDir), zB = Math.max(z - 7 * noseDir, z + 7 * noseDir);
+    box(mesh, x - 1.6, y + 2, zA, x + 1.6, y + 4.4, zB, col);
+    box(mesh, x - 7.5, y + 3.4, z - 2, x + 7.5, y + 4.2, z + 2, col);
+    box(mesh, x - 0.3, y + 4.4, zB - 3, x + 0.3, y + 7, zB - 1, col);
+    box(mesh, x - 7.5, y + 3.4, z - 2, x - 6.2, y + 4.2, z + 2, PALETTE.amber);
+    box(mesh, x + 6.2, y + 3.4, z - 2, x + 7.5, y + 4.2, z + 2, PALETTE.amber);
+    const czA = noseDir > 0 ? zA : zB - 3;
+    box(mesh, x - 0.9, y + 4.4, czA, x + 0.9, y + 5.4, czA + 3, [0.05, 0.08, 0.15]);
+  };
+  parkedPlane(17, c.z - 62, 1, [0.62, 0.65, 0.70]);
+  parkedPlane(17, c.z + 100, -1, [0.55, 0.58, 0.64]);
+  // fuel truck parked by the island: white tank, red cab, red stripe
+  box(mesh, 11, y + 2, c.z + 24, 15, y + 5.5, c.z + 34, [0.88, 0.88, 0.90]);
+  box(mesh, 11, y + 4.4, c.z + 24, 15, y + 5.0, c.z + 34, [0.85, 0.2, 0.15]);
+  box(mesh, 11, y + 2, c.z + 34, 15, y + 6, c.z + 38, [0.85, 0.2, 0.15]);
+  box(mesh, 10.6, y + 2, c.z + 25, 11, y + 3.6, c.z + 28, [0.15, 0.15, 0.18]);
+  box(mesh, 10.6, y + 2, c.z + 31, 11, y + 3.6, c.z + 34, [0.15, 0.15, 0.18]);
+  box(mesh, 15, y + 2, c.z + 25, 15.4, y + 3.6, c.z + 28, [0.15, 0.15, 0.18]);
+  box(mesh, 15, y + 2, c.z + 31, 15.4, y + 3.6, c.z + 34, [0.15, 0.15, 0.18]);
   // 3 arrestor wires — glowing amber bars across the landing strip
   const wireZ = [c.z + 42, c.z + 58, c.z + 74]; // wire 1, 2, 3 (3 = centre/perfect)
   for (let i = 0; i < 3; i++) {
@@ -93,16 +142,18 @@ export function buildCarrierMesh(t) {
 }
 
 export function buildCrewMesh(t) {
-  // simple deck-crew figures: capsule-ish boxes in hi-vis colours, bobbing slightly
+  // deck-crew figures: tall enough to read from the chase camera — hi-vis
+  // vest body + white helmet, bobbing slightly, working the wires and the
+  // parked aircraft. Spots stay clear of the HALILINTAR deck lettering.
   const mesh = { positions: [], colors: [] };
   const c = carrierState(t);
-  const crewCols = [[1, 0.85, 0.1], [0.95, 0.4, 0.1], [0.2, 0.8, 1], [0.9, 0.9, 0.2]];
-  const spots = [[-20, c.z - 40], [18, c.z + 10], [-22, c.z + 60], [20, c.z - 80], [-16, c.z + 100]];
+  const crewCols = [[1, 0.55, 0.1], [1, 0.85, 0.1], [0.2, 0.8, 1], [0.3, 0.9, 0.4], [1, 0.55, 0.1]];
+  const spots = [[-13, c.z + 34], [13, c.z + 52], [-12, c.z + 78], [12, c.z - 8], [-12, c.z - 58]];
   spots.forEach(([x, z], i) => {
     const bob = Math.sin(t * 2 + i * 1.7) * 0.4;
     const col = crewCols[i % crewCols.length];
-    box(mesh, x - 1, c.y + 2 + bob, z - 1, x + 1, c.y + 7 + bob, z + 1, col);
-    box(mesh, x - 1.2, c.y + 7 + bob, z - 1.2, x + 1.2, c.y + 9.4 + bob, z + 1.2, [0.9, 0.75, 0.6]);
+    box(mesh, x - 1.2, c.y + 2 + bob, z - 1.2, x + 1.2, c.y + 8.5 + bob, z + 1.2, col);
+    box(mesh, x - 1.3, c.y + 8.5 + bob, z - 1.3, x + 1.3, c.y + 10.8 + bob, z + 1.3, [0.95, 0.95, 0.92]);
   });
   return mesh;
 }
