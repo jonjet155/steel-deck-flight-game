@@ -107,16 +107,21 @@ export function makeRenderer(canvas) {
     tri([-0.07, 0.9, -6.3], [-0.07, 2.1, -6.5], [-0.07, 2.1, -7.7], PALETTE.amber);
     // white tail strobe at the fin base
     tri([-0.5, 0.3, -8.7], [0.5, 0.3, -8.7], [0, 1.3, -8.7], [1, 1, 1]);
-    // propeller disc: a real spinning fan (the old single line was a
-    // zero-area triangle and rendered as nothing). Radius 3.4 clears the
-    // fuselage, so the rim reads as a pale halo around the nose from behind.
-    const segs = 8;
+    // propeller disc: a thin dim RING around the nose (the old solid fan
+    // rendered as a giant white balloon swallowing the canopy). A ring reads
+    // as a spinning prop from the chase view while the fuselage and canopy
+    // stay visible through its open centre. Radius 2.3 clears the nose.
+    const segs = 8, rIn = 1.5, rOut = 2.3;
     for (let i = 0; i < segs; i++) {
       const a0 = plane.propAngle + (i / segs) * Math.PI * 2;
       const a1 = plane.propAngle + ((i + 1) / segs) * Math.PI * 2;
-      const p0 = [Math.cos(a0) * 3.4, 0.4 + Math.sin(a0) * 3.4, 7.6];
-      const p1 = [Math.cos(a1) * 3.4, 0.4 + Math.sin(a1) * 3.4, 7.6];
-      tri([0, 0.4, 7.6], p0, p1, i % 2 ? [0.7, 0.7, 0.75] : [0.95, 0.95, 0.9]);
+      const q0 = [Math.cos(a0) * rIn, 0.4 + Math.sin(a0) * rIn, 7.6];
+      const q1 = [Math.cos(a1) * rIn, 0.4 + Math.sin(a1) * rIn, 7.6];
+      const p0 = [Math.cos(a0) * rOut, 0.4 + Math.sin(a0) * rOut, 7.6];
+      const p1 = [Math.cos(a1) * rOut, 0.4 + Math.sin(a1) * rOut, 7.6];
+      const shade = i % 2 ? [0.28, 0.28, 0.32] : [0.38, 0.38, 0.42];
+      tri(q0, p0, p1, shade);
+      tri(q0, p1, q1, shade);
     }
     // nav lights: red port, green starboard — near twice the old size so
     // they read at thumbnail size from the chase view

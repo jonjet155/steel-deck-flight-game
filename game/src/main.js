@@ -286,17 +286,18 @@ function buildBoltMesh(bolt) {
 
 function makeBolt(plane) {
   const rng = Math.random;
-  // forced centre-frame: tight x window around the plane, straight ahead,
-  // so the zigzag reads at full size and at thumbnail size — never clipped
-  // to a white strip at a frame edge. Top starts just above the frame so the
-  // visible bolt runs from the cloud base down past the plane.
-  const bx = plane.pos[0] + (rng() - 0.5) * 50;
+  // forced centre-frame: tight x window just right of the plane's centreline
+  // (the bolt used to cross the HUD's 0.4 KM arrow/text at screen centre),
+  // straight ahead, so the zigzag reads at full size and at thumbnail size
+  // — never clipped to a white strip at a frame edge. Top starts just above
+  // the frame so the visible bolt runs from the cloud base down past the plane.
+  const bx = plane.pos[0] + 45 + (rng() - 0.5) * 40;
   const bz = plane.pos[2] + 150 + rng() * 60;
   const pts = [];
   let x = bx, y = 270;
   pts.push([x, y, bz]);
   while (y > 60) {
-    x += (rng() - 0.5) * 90;
+    x += (rng() - 0.5) * 70;
     y -= 34 + rng() * 26;
     pts.push([x, Math.max(55, y), bz + (rng() - 0.5) * 20]);
   }
