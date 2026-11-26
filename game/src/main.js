@@ -187,7 +187,7 @@ function update(dt) {
       // far right, clear of the heading strip, banner and breakdown panel
       // (the view is mirrored horizontally: world +x reads screen-left)
       game.celebrationLast = Math.floor(game.celebration / 0.4);
-      const spots = [[110, 85, -10, [0.2, 0.9, 0.9]], [-110, 85, -10, [1, 0.55, 0.15]]];
+      const spots = [[110, 85, -10, [0.2, 0.9, 0.9]], [-70, 95, -10, [1, 0.55, 0.15]]];
       const s = spots[game.celebrationLast % 2];
       spawnFirework(particles, s[0], CFG.deckY + s[1], c0.z + s[2], s[3]);
     }
