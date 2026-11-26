@@ -267,7 +267,7 @@ function buildBoltMesh(bolt) {
   if (!bolt) return mesh;
   const col = [1.0, 0.95, 0.75];
   for (let i = 0; i < bolt.length - 1; i++) {
-    const a = bolt[i], b = bolt[i + 1], w = 1.6;
+    const a = bolt[i], b = bolt[i + 1], w = 5;
     mesh.positions.push(a[0] - w, a[1], a[2], a[0] + w, a[1], a[2], b[0] + w, b[1], b[2]);
     mesh.positions.push(a[0] - w, a[1], a[2], b[0] + w, b[1], b[2], b[0] - w, b[1], b[2]);
     for (let j = 0; j < 6; j++) mesh.colors.push(...col);
@@ -277,8 +277,9 @@ function buildBoltMesh(bolt) {
 
 function makeBolt(plane) {
   const rng = Math.random;
-  const bx = plane.pos[0] + (rng() - 0.5) * 300;
-  const bz = plane.pos[2] + 250 + rng() * 250;
+  // close enough to read at 1280px: a few units wide, 120–260 ahead of the plane
+  const bx = plane.pos[0] + (rng() - 0.5) * 160;
+  const bz = plane.pos[2] + 120 + rng() * 140;
   const pts = [];
   let x = bx, y = 320;
   pts.push([x, y, bz]);
