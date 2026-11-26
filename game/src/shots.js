@@ -28,8 +28,12 @@ export function applyShot(game, params) {
   } else if (shot === 'storm') {
     gs.state = 'play';
     gs.sortieIdx = 0; // STORM INTERCEPT
-    plane.pos = [-120, 110, 180];
-    plane.heading = 0.5; plane.pitch = 0.05; plane.bank = -0.45;
+    // restaged fix round: wings near-level (slight bank only) so the chase camera
+    // reads fuselage + tail + wings as one plane; heading ~0 keeps the bolt
+    // centre-frame. Nearest cells sit 400+ out, spread left/centre/right with
+    // sky gaps between them instead of one wall filling the frame.
+    plane.pos = [60, 110, 0];
+    plane.heading = -0.12; plane.pitch = 0.02; plane.bank = -0.08;
     plane.speed = 190; plane.throttle = 0.85; plane.fuel = 64; plane.afterburner = true;
     game.weather.flash = 0.9;
     game.stormStaged = true;

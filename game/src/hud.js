@@ -101,22 +101,23 @@ export function drawHUD(ctx, W, H, gs, plane, flols, objective) {
   let hearts = '';
   for (let i = 0; i < 3; i++) hearts += i < 3 - plane.damage ? '♥ ' : '♡ ';
   ctx.fillText(hearts, W / 2 - 172, H - 112 > 0 ? H - 112 : 20);
-  // popup (big centre)
+  // popup (big centre) — parked high (H*0.17) so it never covers the
+  // target-distance text at cy-78 below the FLOLS panel
   if (gs.popup && gs.popupT > 0) {
     const a = Math.min(1, gs.popupT);
     ctx.globalAlpha = a;
     ctx.fillStyle = 'rgba(8,10,26,0.78)';
     const pw = 620;
-    ctx.fillRect(W / 2 - pw / 2, H * 0.24, pw, 96);
+    ctx.fillRect(W / 2 - pw / 2, H * 0.17, pw, 96);
     ctx.strokeStyle = '#ffb43c'; ctx.lineWidth = 3;
-    ctx.strokeRect(W / 2 - pw / 2, H * 0.24, pw, 96);
+    ctx.strokeRect(W / 2 - pw / 2, H * 0.17, pw, 96);
     ctx.fillStyle = '#ffb43c';
     ctx.font = 'bold 44px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText(gs.popup.text, W / 2, H * 0.24 + 40);
+    ctx.fillText(gs.popup.text, W / 2, H * 0.17 + 40);
     ctx.fillStyle = '#bfefff';
     ctx.font = 'bold 22px monospace';
-    ctx.fillText(gs.popup.sub, W / 2, H * 0.24 + 76);
+    ctx.fillText(gs.popup.sub, W / 2, H * 0.17 + 76);
     ctx.textAlign = 'left';
     ctx.globalAlpha = 1;
   }

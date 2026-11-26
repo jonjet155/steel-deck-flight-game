@@ -160,6 +160,9 @@ function update(dt) {
   }
   if (game.stormStaged) {
     weather.flash = Math.max(weather.flash, 0.55);
+    // staged storm shot: a bolt must be in frame for every captured frame,
+    // not only when the random flash timer happens to fire
+    if (!game.bolt) game.bolt = makeBolt(plane);
     if (Math.random() < dt * 3) spawn(particles, 'spray', plane.pos[0] - 10, plane.pos[1] - 4, plane.pos[2], 2, [0.7, 0.85, 1], 14);
   }
 }
@@ -251,9 +254,15 @@ function buildRainMesh(weather, plane) {
   // rain streaks: short vertical slivers around the plane
   const mesh = { positions: [], colors: [] };
   const col = [0.75, 0.85, 1.0];
+  // chase-camera eye: a streak inside the near field blows up into a huge
+  // white vertical strip at the frame edge, so cull streaks near the eye
+  const fx = Math.sin(plane.heading), fz = Math.cos(plane.heading);
+  const ex = plane.pos[0] - fx * 26, ey = plane.pos[1] + 9, ez = plane.pos[2] - fz * 26;
   for (const r of weather.rain) {
     const dx = r.x - plane.pos[0], dz = r.z - plane.pos[2];
     if (Math.abs(dx) > 160 || Math.abs(dz) > 160) continue;
+    const dex = r.x - ex, dey = r.y - ey, dez = r.z - ez;
+    if (dex * dex + dey * dey + dez * dez < 196) continue;
     const x = r.x, y = r.y, z = r.z, w = 0.35, l = 7;
     mesh.positions.push(x - w, y, z, x + w, y, z, x, y - l, z);
     for (let i = 0; i < 3; i++) mesh.colors.push(...col);
@@ -267,7 +276,7 @@ function buildBoltMesh(bolt) {
   if (!bolt) return mesh;
   const col = [1.0, 0.95, 0.75];
   for (let i = 0; i < bolt.length - 1; i++) {
-    const a = bolt[i], b = bolt[i + 1], w = 5;
+    const a = bolt[i], b = bolt[i + 1], w = 6.5;
     mesh.positions.push(a[0] - w, a[1], a[2], a[0] + w, a[1], a[2], b[0] + w, b[1], b[2]);
     mesh.positions.push(a[0] - w, a[1], a[2], b[0] + w, b[1], b[2], b[0] - w, b[1], b[2]);
     for (let j = 0; j < 6; j++) mesh.colors.push(...col);
@@ -277,14 +286,17 @@ function buildBoltMesh(bolt) {
 
 function makeBolt(plane) {
   const rng = Math.random;
-  // close enough to read at 1280px: a few units wide, 120–260 ahead of the plane
-  const bx = plane.pos[0] + (rng() - 0.5) * 160;
-  const bz = plane.pos[2] + 120 + rng() * 140;
+  // forced centre-frame: tight x window around the plane, straight ahead,
+  // so the zigzag reads at full size and at thumbnail size — never clipped
+  // to a white strip at a frame edge. Top starts just above the frame so the
+  // visible bolt runs from the cloud base down past the plane.
+  const bx = plane.pos[0] + (rng() - 0.5) * 50;
+  const bz = plane.pos[2] + 150 + rng() * 60;
   const pts = [];
-  let x = bx, y = 320;
+  let x = bx, y = 270;
   pts.push([x, y, bz]);
   while (y > 60) {
-    x += (rng() - 0.5) * 36;
+    x += (rng() - 0.5) * 90;
     y -= 34 + rng() * 26;
     pts.push([x, Math.max(55, y), bz + (rng() - 0.5) * 20]);
   }

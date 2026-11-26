@@ -49,18 +49,25 @@ export function makeRenderer(canvas) {
   }
 
   // sky gradient quad drawn first (as a big background mesh, depth off)
-  // Positioned relative to the camera eye so it is always ahead of the view.
-  function drawSky(mvp, eye) {
+  // Positioned ahead of the camera ALONG ITS HEADING, so the wall always
+  // covers the whole frustum whatever way the plane points — a fixed +z wall
+  // leaves a bare strip at the frame edge on a diagonal heading.
+  function drawSky(mvp, eye, heading) {
     const top = PALETTE.skyTop, mid = PALETTE.skyMid, sun = PALETTE.sunset;
     // horizon band mesh: a wide strip ahead of the camera
     const mesh = { positions: [], colors: [] };
-    const z = eye[2] + 1400, y0 = -60, y1 = 320, x0 = eye[0] - 1600, x1 = eye[0] + 1600;
+    const fx = Math.sin(heading), fz = Math.cos(heading);
+    const cx = eye[0] + fx * 1400, cz = eye[2] + fz * 1400;
+    const rx = fz, rz = -fx; // right vector, perpendicular to forward
+    const y0 = -60, y1 = 320;
+    const x0 = cx - rx * 1600, z0 = cz - rz * 1600;
+    const x1 = cx + rx * 1600, z1 = cz + rz * 1600;
     const quad = (a, b, c, d, ca, cb) => {
       mesh.positions.push(...a, ...b, ...c, ...a, ...c, ...d);
       mesh.colors.push(...ca, ...ca, ...cb, ...ca, ...cb, ...cb);
     };
-    quad([x0, y1, z], [x1, y1, z], [x1, y0 + 60, z], [x0, y0 + 60, z], top, mid);
-    quad([x0, y0 + 60, z], [x1, y0 + 60, z], [x1, y0, z], [x0, y0, z], mid, sun);
+    quad([x0, y1, z0], [x1, y1, z1], [x1, y0 + 60, z1], [x0, y0 + 60, z0], top, mid);
+    quad([x0, y0 + 60, z0], [x1, y0 + 60, z1], [x1, y0, z1], [x0, y0, z0], mid, sun);
     // (no square sun disc — the orange horizon band carries the sunset; a quad sun reads as a box)
     gl.disable(gl.DEPTH_TEST);
     drawMesh(mesh, mvp, 1.15);
@@ -92,13 +99,29 @@ export function makeRenderer(canvas) {
     tri([0, 0.4, -6], [-2.6, 0.2, -8.5], [-2.6, 0.2, -6.5], c);
     tri([0, 0.4, -6], [2.6, 0.2, -6.5], [2.6, 0.2, -8.5], c);
     tri([0, 0.3, -6], [0, 2.6, -8], [0, 2.6, -6], c);
-    // propeller disc (spinning, bright)
-    const pa = plane.propAngle;
-    const px = Math.cos(pa) * 2.6, py = Math.sin(pa) * 2.6;
-    tri([0, 0.4, 7.6], [px, 0.4 + py, 7.6], [-px, 0.4 - py, 7.6], [0.95, 0.95, 0.9]);
-    // nav lights: red port, green starboard
-    tri([-9.4, -0.2, -2.4], [-8.6, -0.2, -2.4], [-9, 0.5, -2.4], PALETTE.red);
-    tri([9.4, -0.2, -2.4], [9, 0.5, -2.4], [8.6, -0.2, -2.4], PALETTE.green);
+    // Elang Badai livery, readable from directly behind: amber spine stripe
+    // down the fuselage top (wide at the tail, nearest the chase camera)
+    tri([0, 0.48, 6.5], [-0.55, 0.1, -5.8], [0.55, 0.1, -5.8], PALETTE.amber);
+    // tail-fin chevron on both faces of the vertical fin
+    tri([0.07, 0.9, -6.3], [0.07, 2.1, -7.7], [0.07, 2.1, -6.5], PALETTE.amber);
+    tri([-0.07, 0.9, -6.3], [-0.07, 2.1, -6.5], [-0.07, 2.1, -7.7], PALETTE.amber);
+    // white tail strobe at the fin base
+    tri([-0.5, 0.3, -8.7], [0.5, 0.3, -8.7], [0, 1.3, -8.7], [1, 1, 1]);
+    // propeller disc: a real spinning fan (the old single line was a
+    // zero-area triangle and rendered as nothing). Radius 3.4 clears the
+    // fuselage, so the rim reads as a pale halo around the nose from behind.
+    const segs = 8;
+    for (let i = 0; i < segs; i++) {
+      const a0 = plane.propAngle + (i / segs) * Math.PI * 2;
+      const a1 = plane.propAngle + ((i + 1) / segs) * Math.PI * 2;
+      const p0 = [Math.cos(a0) * 3.4, 0.4 + Math.sin(a0) * 3.4, 7.6];
+      const p1 = [Math.cos(a1) * 3.4, 0.4 + Math.sin(a1) * 3.4, 7.6];
+      tri([0, 0.4, 7.6], p0, p1, i % 2 ? [0.7, 0.7, 0.75] : [0.95, 0.95, 0.9]);
+    }
+    // nav lights: red port, green starboard — near twice the old size so
+    // they read at thumbnail size from the chase view
+    tri([-9.8, -0.3, -2.4], [-8.2, -0.3, -2.4], [-9, 1.1, -2.4], [1, 0.25, 0.25]);
+    tri([9.8, -0.3, -2.4], [9, 1.1, -2.4], [8.2, -0.3, -2.4], [0.25, 1, 0.4]);
     // afterburner flame
     if (plane.afterburner) {
       tri([0, 0.4, -6.5], [-1.2, 0.4, -12], [1.2, 0.4, -12], [1.0, 0.55, 0.1]);
@@ -125,7 +148,7 @@ export function makeRenderer(canvas) {
     const view = mat4LookAt(eye, center, [0, 1, 0]);
     const proj = mat4Perspective(deg2rad(62), canvas.width / canvas.height, 0.5, 4000);
     const vp = mat4Mul(proj, view);
-    drawSky(vp, eye);
+    drawSky(vp, eye, plane.heading);
     for (const m of meshes) drawMesh(m.mesh, vp, (m.bright || 1) * bright);
     // plane: model matrix from position + heading + bank + pitch
     let model = mat4Translate(plane.pos[0], plane.pos[1], plane.pos[2]);
