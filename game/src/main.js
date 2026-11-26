@@ -42,7 +42,7 @@ const stripMesh = buildStrip(STRIP.x, STRIP.z, STRIP.heading);
 // ember-lit for the supply run, dark slate with ember rims for the storm.
 function buildCloudMeshes(clouds, mode) {
   const pal = mode === 'warm'
-    ? { lit: [0.95, 0.55, 0.30], dark: [0.45, 0.32, 0.52] }
+    ? { lit: [0.78, 0.48, 0.38], dark: [0.40, 0.30, 0.50] }
     : mode === 'storm'
       ? { lit: [0.55, 0.30, 0.18], dark: [0.13, 0.13, 0.26] }
       : { lit: [0.72, 0.42, 0.42], dark: [0.38, 0.30, 0.48] };
@@ -74,8 +74,9 @@ function buildStormCell(x, z, r, y) {
     const m0 = [x + Math.cos(a0) * r * 0.55, y + r * 0.28, z + Math.sin(a0) * r * 0.55];
     const m1 = [x + Math.cos(a1) * r * 0.55, y + r * 0.28, z + Math.sin(a1) * r * 0.55];
     const apex = [x, y + r * 0.5, z];
-    // ember-lit rim on the sun-facing lower band, dark slate elsewhere
-    const band = Math.cos(a0) > 0.2 ? [0.6, 0.30, 0.16] : (i % 2 ? dark : dark2);
+    // ember-lit rim: a NARROW sliver on the sun-facing lower band only
+    // (2 of 10 segments), never a whole orange face
+    const band = Math.cos(a0) > 0.75 ? [0.5, 0.25, 0.12] : (i % 2 ? dark : dark2);
     tri(p0, p1, m1, band);
     tri(p0, m1, m0, band);
     tri(m0, m1, apex, top);
@@ -316,7 +317,9 @@ function update(dt) {
     // staged storm shot: a bolt must be in frame for every captured frame,
     // not only when the random flash timer happens to fire
     if (!game.bolt) game.bolt = makeBolt(plane);
-    if (Math.random() < dt * 3) spawn(particles, 'spray', plane.pos[0] - 10, plane.pos[1] - 4, plane.pos[2], 2, [0.7, 0.85, 1], 14);
+    // (no spray spawn here: spray particles spawn 26 units from the chase
+    // camera and blow up into giant pale pyramids — the rain + bolt + cells
+    // already carry the storm)
     // mid-mission feedback: never SCORE 0 / CHAIN x1 on a flying shot
     gs.score = 480; gs.chain = 3;
     showPopup(gs, 'STORM EDGE +150', 'CELL 3/6 — CHAIN x3');
@@ -392,8 +395,8 @@ function drawMapScreen() {
   hudCtx.fillStyle = '#2eff5e'; hudCtx.fillRect(978, 445, 12, 75);
   hudCtx.fillStyle = '#ffffff'; hudCtx.font = 'bold 20px monospace';
   hudCtx.fillText('WIRE 1', 700, 432);
-  hudCtx.fillText('WIRE 2', 820, 432);
-  hudCtx.fillText('WIRE 3 PERFECT +250', 900, 432);
+  hudCtx.fillText('WIRE 2', 810, 432);
+  hudCtx.fillText('WIRE 3 PERFECT +250', 920, 432);
   hudCtx.fillStyle = '#8a8f9a'; hudCtx.fillRect(1160, 470, 50, 50);
   hudCtx.fillStyle = '#ffb43c'; hudCtx.font = 'bold 24px monospace';
   hudCtx.fillText('07', 1168, 502);
@@ -404,8 +407,8 @@ function drawMapScreen() {
   hudCtx.strokeStyle = '#ffb43c'; hudCtx.lineWidth = 2; hudCtx.strokeRect(660, 596, 560, 84);
   hudCtx.fillStyle = '#ffb43c'; hudCtx.font = 'bold 22px monospace';
   hudCtx.fillText('HOW TO TRAP', 676, 626);
-  hudCtx.fillStyle = '#bfefff'; hudCtx.font = '19px monospace';
-  hudCtx.fillText('Hook down  •  95 knots  •  WIRE 3 = PERFECT +250', 676, 656);
+  hudCtx.fillStyle = '#bfefff'; hudCtx.font = '18px monospace';
+  hudCtx.fillText('Hook down • 95 knots • WIRE 3 = PERFECT +250', 676, 656);
   // 12 UPGRADES — 8 shown with icon + name + price in a 2x4 grid, then +4 MORE.
   // Game content stays 12 upgrades; only the map display shows 8 + "+4 MORE"
   // so the list stays readable at judge size.
@@ -418,9 +421,9 @@ function drawMapScreen() {
     hudCtx.strokeStyle = 'rgba(255,180,60,0.4)'; hudCtx.lineWidth = 1; hudCtx.strokeRect(x, y, 272, 42);
     hudCtx.fillStyle = '#ffb43c'; hudCtx.font = 'bold 22px monospace';
     hudCtx.fillText(icons[i], x + 12, y + 22);
-    hudCtx.fillStyle = '#bfefff'; hudCtx.font = 'bold 19px monospace';
+    hudCtx.fillStyle = '#bfefff'; hudCtx.font = 'bold 17px monospace';
     hudCtx.fillText(u.name, x + 44, y + 22);
-    hudCtx.fillStyle = '#7df9ff'; hudCtx.font = 'bold 17px monospace';
+    hudCtx.fillStyle = '#7df9ff'; hudCtx.font = 'bold 15px monospace';
     hudCtx.textAlign = 'right';
     hudCtx.fillText(u.price + ' CR', x + 260, y + 22);
     hudCtx.textAlign = 'left';
@@ -476,30 +479,30 @@ function buildBoltMesh(bolt) {
       for (let j = 0; j < 6; j++) mesh.colors.push(...col);
     }
   };
-  pass(3.2, [0.45, 0.5, 0.95]);
-  pass(1.1, [1.0, 0.98, 0.9]);
+  pass(1.8, [0.35, 0.38, 0.7]);
+  pass(0.8, [1.0, 0.98, 0.9]);
   return mesh;
 }
 
 function makeBolt(plane) {
   const rng = Math.random;
-  // screen-RIGHT sky band (the chase view is mirrored: world -x reads
-  // screen-right), clear of the heading strip (centre), the score panel
-  // (far right) and the FLOLS box — the bolt lives in empty sky and never
-  // crosses HUD text. Top starts just above the frame so the visible bolt
-  // runs from the cloud base down past the plane.
-  const bx = plane.pos[0] - 42 + (rng() - 0.5) * 28;
+  // SHORT bolt in the upper-right sky band only (the chase view is
+  // mirrored: world -x reads screen-right). It starts above the frame and
+  // ends at world y ~165 — screen y ~320, just above the FLOLS box — so it
+  // never crosses the heading strip (centre), the score panel (far right)
+  // or the FLOLS box. Thin core + dim halo: a distant strike, not a ribbon.
+  const bx = plane.pos[0] - 80 + (rng() - 0.5) * 24;
   const bz = plane.pos[2] + 150 + rng() * 60;
   const pts = [];
   let x = bx, y = 270;
   pts.push([x, y, bz]);
-  while (y > 70) {
+  while (y > 165) {
     // zigzag with mean-reversion toward the anchor x: the bolt wanders but
     // never drifts across the frame — it stays a right-sky strike beside
     // the plane
-    x += (bx - x) * 0.35 + (rng() - 0.5) * 46;
-    y -= 30 + rng() * 24;
-    pts.push([x, Math.max(65, y), bz + (rng() - 0.5) * 16]);
+    x += (bx - x) * 0.35 + (rng() - 0.5) * 40;
+    y -= 26 + rng() * 20;
+    pts.push([x, Math.max(165, y), bz + (rng() - 0.5) * 16]);
   }
   return pts;
 }

@@ -13,7 +13,7 @@ export function applyShot(game, params) {
     // restaged 6.2: a FAR approach, not a carrier chase — the island strip
     // sits ahead-centre, the carrier is a small ship far right-of-centre,
     // sea tinted teal-green, sky warm dusk. The strip island is 1.2 KM out.
-    plane.pos = [150, 68, -500];
+    plane.pos = [150, 76, -500];
     plane.heading = -0.45; plane.pitch = 0.02; plane.bank = 0.12;
     plane.speed = 165; plane.throttle = 0.7; plane.fuel = 78;
     game.carrierT = 0;

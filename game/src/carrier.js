@@ -93,9 +93,9 @@ export function buildCarrierMesh(t) {
     R: [[0, 0], [0, 1], [0, 2], [0, 3], [0, 4], [1, 0], [1, 2], [2, 0], [2, 1], [2, 2], [1, 3], [2, 4]],
   };
   {
-    const cw = 3.4, cd = 3.4, ch = 0.9, pitch = 21;
+    const cw = 4.0, cd = 4.0, ch = 1.2, pitch = 24;
     const word = 'HALILINTAR';
-    const x0 = -25.5, z0 = c.z - 85;
+    const x0 = -25.5, z0 = c.z - 102;
     [...word].forEach((ch, li) => {
       const segs = LETTERS[ch];
       if (!segs) return;

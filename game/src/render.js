@@ -106,7 +106,7 @@ export function makeRenderer(canvas) {
       quad(B, F, G, C, col); quad(D, C, G, H, col);
     };
     const c = plane.def.color;
-    const top = [0.84, 0.87, 0.90];   // fuselage top, sunlit
+    const top = [0.60, 0.63, 0.68];   // fuselage top, sunlit grey — never blown-out white
     const belly = [0.22, 0.25, 0.30];  // fuselage belly, shadowed
     const canopyCol = [0.05, 0.08, 0.15]; // dark canopy glass
     // Fuselage: a faceted BODY with real volume — 5 stations, nose at +z.
@@ -221,17 +221,18 @@ export function makeRenderer(canvas) {
     tri([-0.07, 0.9, -6.3], [-0.07, 2.1, -6.5], [-0.07, 2.1, -7.7], PALETTE.amber);
     // small white tail strobe at the fin base
     tri([-0.35, 0.3, -8.7], [0.35, 0.3, -8.7], [0, 0.9, -8.7], [1, 1, 1]);
-    // propeller disc: a 16-segment spinning fan in mid greys — round, never
-    // a hexagon, never a white balloon; the nose and canopy stay visible
-    // through its darker alternating blades
+    // propeller disc: a SMALL 16-segment spinning fan in dark greys — a
+    // subtle disc at the nose, never a mushroom cap swallowing the canopy.
+    // Radius 1.8 barely clears the nose; the dark canopy stays the visual
+    // focus ahead of the wings.
     {
       const segs = 16;
       let prev = null;
       for (let i = 0; i <= segs; i++) {
         const a = plane.propAngle + (i / segs) * Math.PI * 2;
-        const p = [Math.cos(a) * 2.4, 0.4 + Math.sin(a) * 2.4, 7.9];
+        const p = [Math.cos(a) * 1.8, 0.4 + Math.sin(a) * 1.8, 7.9];
         if (prev) {
-          const shade = i % 2 ? [0.30, 0.33, 0.38] : [0.52, 0.55, 0.60];
+          const shade = i % 2 ? [0.20, 0.22, 0.26] : [0.36, 0.38, 0.42];
           tri([0, 0.4, 7.9], prev, p, shade);
         }
         prev = p;
