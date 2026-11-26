@@ -10,7 +10,7 @@ export function drawHUD(ctx, W, H, gs, plane, flols, objective) {
     ctx.strokeRect(x, y, w, h);
   };
   // 1 — Objective top-left
-  panel(16, 14, 470, 64);
+  panel(16, 14, 430, 64);
   ctx.fillStyle = '#ffb43c';
   ctx.font = 'bold 24px monospace';
   ctx.fillText(objective.title, 30, 38);
@@ -120,8 +120,5 @@ export function drawHUD(ctx, W, H, gs, plane, flols, objective) {
     ctx.textAlign = 'left';
     ctx.globalAlpha = 1;
   }
-  // mute hint
-  ctx.fillStyle = 'rgba(191,239,255,0.8)';
-  ctx.font = '16px monospace';
-  ctx.fillText('M mute  |  W/S throttle  |  Arrows pitch & bank  |  Shift afterburner  |  Space airbrake', 16, H - 8);
+  // (control hints live on the title screen; the bottom edge stays clean)
 }

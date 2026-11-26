@@ -41,25 +41,26 @@ const stripMesh = buildStrip(STRIP.x, STRIP.z, STRIP.heading);
 const cloudMeshes = weather.clouds.map((c) => {
   const s = c.s;
   const mesh = { positions: [], colors: [] };
-  const col = c.lit ? PALETTE.cloudLit : PALETTE.cloudDark;
+  // soft flat puffs: low, wide triangles in muted dusk tones — never tall pyramids
+  const col = c.lit ? [0.72, 0.42, 0.42] : [0.38, 0.30, 0.48];
   const tri = (a, b, d, cc) => { mesh.positions.push(...a, ...b, ...d); for (let i = 0; i < 3; i++) mesh.colors.push(...cc); };
   // puffy low-poly cloud: two stacked boxes as triangles
   const x = c.x, y = c.y, z = c.z;
-  tri([x - s, y, z - s * 0.5], [x + s, y, z - s * 0.5], [x, y + s * 0.5, z], col);
-  tri([x - s, y, z + s * 0.5], [x, y + s * 0.5, z], [x + s, y, z + s * 0.5], col);
-  tri([x - s * 0.6, y + s * 0.4, z], [x + s * 0.6, y + s * 0.4, z], [x, y + s, z], col);
+  tri([x - s, y, z - s * 0.5], [x + s, y, z - s * 0.5], [x, y + s * 0.28, z], col);
+  tri([x - s, y, z + s * 0.5], [x, y + s * 0.28, z], [x + s, y, z + s * 0.5], col);
+  tri([x - s * 0.6, y + s * 0.22, z], [x + s * 0.6, y + s * 0.22, z], [x, y + s * 0.5, z], col);
   return mesh;
 });
 const stormMeshes = cells.map((cell) => {
   const mesh = { positions: [], colors: [] };
   const tri = (a, b, d, cc) => { mesh.positions.push(...a, ...b, ...d); for (let i = 0; i < 3; i++) mesh.colors.push(...cc); };
   const { x, z, r } = cell;
-  const dark = [0.22, 0.16, 0.38], lit = [0.95, 0.55, 0.25];
+  const dark = [0.20, 0.15, 0.36], lit = [0.55, 0.32, 0.30];
   for (let i = 0; i < 8; i++) {
     const a0 = (i / 8) * Math.PI * 2, a1 = ((i + 1) / 8) * Math.PI * 2;
     const p0 = [x + Math.cos(a0) * r, cell.y, z + Math.sin(a0) * r];
     const p1 = [x + Math.cos(a1) * r, cell.y, z + Math.sin(a1) * r];
-    tri(p0, p1, [x, cell.y + r * 0.9, z], i % 2 ? lit : dark);
+    tri(p0, p1, [x, cell.y + r * 0.45, z], i % 2 ? lit : dark);
     tri(p0, [x, cell.y - 20, z], p1, dark);
   }
   return mesh;

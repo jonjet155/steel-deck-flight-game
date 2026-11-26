@@ -15,15 +15,15 @@ export function buildSea(size, segments) {
     for (let j = 0; j < segments; j++) {
       const x0 = -size / 2 + i * step, z0 = -size / 2 + j * step;
       const x1 = x0 + step, z1 = z0 + step;
-      const w = 0.5 + rng() * 0.5;
+      const w = 0.85 + rng() * 0.15;
       const c = [
         PALETTE.seaDeep[0] * w + PALETTE.seaLight[0] * (1 - w),
         PALETTE.seaDeep[1] * w + PALETTE.seaLight[1] * (1 - w),
         PALETTE.seaDeep[2] * w + PALETTE.seaLight[2] * (1 - w),
       ];
-      // bright sunset shimmer band near horizon centre
+      // faint sunset shimmer near the horizon centre line only
       const cx = (x0 + x1) / 2;
-      const shimmer = Math.max(0, 1 - Math.abs(cx) / (size * 0.35)) * 0.25;
+      const shimmer = Math.max(0, 1 - Math.abs(cx) / (size * 0.35)) * 0.10;
       const cc = [c[0] + shimmer * 0.9, c[1] + shimmer * 0.45, c[2] + shimmer * 0.1];
       tri(mesh, [x0, 0, z0], [x1, 0, z0], [x1, 0, z1], cc);
       tri(mesh, [x0, 0, z0], [x1, 0, z1], [x0, 0, z1], cc);
