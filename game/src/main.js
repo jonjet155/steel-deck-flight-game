@@ -100,7 +100,7 @@ function trapLanding() {
     const fwCols = [[1, 0.55, 0.15], [0.2, 0.9, 0.9], [1, 0.8, 0.3]];
     const nFw = hit.wire === 3 ? 3 : 1;
     for (let i = 0; i < nFw; i++) {
-      spawnFirework(particles, plane.pos[0] + (i - 1) * 45, CFG.deckY + 90 + i * 18, c0.z + 20 - i * 30, fwCols[i % 3]);
+      spawnFirework(particles, plane.pos[0] + (i - 1) * 45, CFG.deckY + 68 + i * 14, c0.z + 20 - i * 30, fwCols[i % 3]);
     }
     if (hit.wire === 3) spawnEmbers(particles, plane.pos[0], CFG.deckY + 70, plane.pos[2], 26);
     if (hit.wire === 3) showPopup(gs, 'WIRE 3 — PERFECT +250', 'TRAP! Elang Badai is home.');
@@ -176,14 +176,14 @@ function update(dt) {
     const c0 = carrierState(game.carrierT);
     if (!game.celebrationFired) {
       game.celebrationFired = true;
-      spawnFirework(particles, -45, CFG.deckY + 95, c0.z + 30, [1, 0.55, 0.15]);
-      spawnFirework(particles, 40, CFG.deckY + 115, c0.z - 10, [0.2, 0.9, 0.9]);
-      spawnFirework(particles, 0, CFG.deckY + 80, c0.z + 55, [1, 0.8, 0.3]);
+      spawnFirework(particles, -45, CFG.deckY + 68, c0.z + 30, [1, 0.55, 0.15]);
+      spawnFirework(particles, 40, CFG.deckY + 82, c0.z - 10, [0.2, 0.9, 0.9]);
+      spawnFirework(particles, 0, CFG.deckY + 60, c0.z + 55, [1, 0.8, 0.3]);
       spawnEmbers(particles, 0, CFG.deckY + 70, plane.pos[2], 26);
     } else if (game.celebration > 1 && Math.floor(game.celebration) !== game.celebrationLast) {
       game.celebrationLast = Math.floor(game.celebration);
       const cols = [[1, 0.55, 0.15], [0.2, 0.9, 0.9], [1, 0.8, 0.3]];
-      spawnFirework(particles, (Math.random() - 0.5) * 90, CFG.deckY + 100, c0.z + (Math.random() - 0.5) * 60, cols[game.celebrationLast % 3]);
+      spawnFirework(particles, (Math.random() - 0.5) * 90, CFG.deckY + 75, c0.z + (Math.random() - 0.5) * 60, cols[game.celebrationLast % 3]);
     }
     spawn(particles, 'spark', plane.pos[0], CFG.deckY + 3, plane.pos[2], 8, [1, 0.8, 0.2], 24);
     spawn(particles, 'steam', plane.pos[0], CFG.deckY + 2, plane.pos[2] - 10, 6, [0.9, 0.9, 0.95], 10);
