@@ -45,7 +45,7 @@ export function spawnFirework(p, x, y, z, color) {
     p.list.push({
       kind: 'firework', x, y, z,
       vx: Math.cos(a) * sp, vy: Math.sin(a) * sp * 0.7 + 8, vz: (Math.random() - 0.5) * sp,
-      life: 1.2 + Math.random() * 0.9, max: 2.1, color, size: 2.2 + Math.random() * 2.4,
+      life: 2.2 + Math.random() * 1.3, max: 3.5, color, size: 2.2 + Math.random() * 2.4,
     });
   }
   if (p.list.length > 500) p.list.splice(0, p.list.length - 500);
