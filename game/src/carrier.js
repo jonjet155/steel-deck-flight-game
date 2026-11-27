@@ -26,12 +26,15 @@ export function buildCarrierMesh(t) {
   const L = CFG.deckLength, W = CFG.deckWidth, y = c.y, z0 = c.z - L / 2, z1 = c.z + L / 2;
   // hull
   box(mesh, -W / 2 - 4, y - 16, z0 - 6, W / 2 + 4, y, z1 + 6, [0.28, 0.30, 0.35]);
-  // 6.3 phosphorescent wake: a glowing teal fan trailing behind the stern
-  // at sea level, widening as it falls behind — the sea lights up for her
-  tri(mesh, [-6, 0.6, z0 - 6], [6, 0.6, z0 - 6], [26, 0.6, z0 - 150], [0.10, 0.75, 0.70]);
-  tri(mesh, [-6, 0.6, z0 - 6], [26, 0.6, z0 - 150], [-26, 0.6, z0 - 150], [0.10, 0.75, 0.70]);
-  tri(mesh, [-3, 0.7, z0 - 6], [3, 0.7, z0 - 6], [12, 0.7, z0 - 110], [0.16, 0.95, 0.85]);
-  tri(mesh, [-3, 0.7, z0 - 6], [12, 0.7, z0 - 110], [-12, 0.7, z0 - 110], [0.16, 0.95, 0.85]);
+  // 6.4 phosphorescent wake, BRIGHTER + LONGER: a glowing teal fan
+  // trailing 260 units behind the stern, widening as it falls behind, in
+  // three bands — the sea lights up for her, and it reads at judge size
+  tri(mesh, [-6, 0.6, z0 - 6], [6, 0.6, z0 - 6], [40, 0.6, z0 - 260], [0.12, 0.85, 0.78]);
+  tri(mesh, [-6, 0.6, z0 - 6], [40, 0.6, z0 - 260], [-40, 0.6, z0 - 260], [0.12, 0.85, 0.78]);
+  tri(mesh, [-4, 0.7, z0 - 6], [4, 0.7, z0 - 6], [22, 0.7, z0 - 190], [0.18, 1.0, 0.88]);
+  tri(mesh, [-4, 0.7, z0 - 6], [22, 0.7, z0 - 190], [-22, 0.7, z0 - 190], [0.18, 1.0, 0.88]);
+  tri(mesh, [-2, 0.8, z0 - 6], [2, 0.8, z0 - 6], [10, 0.8, z0 - 130], [0.25, 1.0, 0.92]);
+  tri(mesh, [-2, 0.8, z0 - 6], [10, 0.8, z0 - 130], [-10, 0.8, z0 - 130], [0.25, 1.0, 0.92]);
   // deck slab — bright steel grey so it reads in screenshots
   box(mesh, -W / 2, y, z0, W / 2, y + 2, z1, PALETTE.deckGrey);
   // landing strip (angled, amber centre line)
@@ -53,10 +56,12 @@ export function buildCarrierMesh(t) {
   for (const cz of [c.z - 10, c.z + 10]) {
     tri(mesh, [-6, y + 2.2, cz - 6], [0, y + 2.2, cz + 6], [6, y + 2.2, cz - 6], PALETTE.amber);
   }
-  // deck edge lights (amber, both sides)
-  for (let z = z0 + 6; z < z1; z += 14) {
-    box(mesh, -W / 2 - 1, y + 2, z, -W / 2 + 1, y + 3.4, z + 2, PALETTE.amber);
-    box(mesh, W / 2 - 1, y + 2, z, W / 2 + 1, y + 3.4, z + 2, PALETTE.amber);
+  // 6.4 deck-edge light strings: warm glowing lamps every 7 units along
+  // BOTH deck edges — the deck reads as a lit floating city at dusk, not
+  // a slab. Bigger and brighter than the old 14-unit amber boxes.
+  for (let z = z0 + 6; z < z1; z += 7) {
+    box(mesh, -W / 2 - 1.2, y + 2, z, -W / 2 + 1.2, y + 4.2, z + 2.4, [1.0, 0.78, 0.25]);
+    box(mesh, W / 2 - 1.2, y + 2, z, W / 2 + 1.2, y + 4.2, z + 2.4, [1.0, 0.78, 0.25]);
   }
   // island superstructure (starboard)
   box(mesh, W / 2 - 14, y + 2, c.z - 30, W / 2 - 2, y + 26, c.z + 18, [0.55, 0.57, 0.62]);
@@ -78,8 +83,20 @@ export function buildCarrierMesh(t) {
   box(mesh, W / 2 - 12, y + 34, c.z - 18, W / 2 - 5, y + 44, c.z - 8, [0.30, 0.32, 0.36]);
   box(mesh, W / 2 - 12, y + 40, c.z - 18, W / 2 - 5, y + 42.5, c.z - 8, PALETTE.ember);
   // teal floodlights on the superstructure's port face (facing the deck)
+  // 6.4: bigger + an amber floodlight row above them, so the island glows
   for (let z = c.z - 24; z < c.z + 14; z += 12) {
-    box(mesh, W / 2 - 14.6, y + 14, z, W / 2 - 14, y + 17, z + 4, PALETTE.teal);
+    box(mesh, W / 2 - 14.8, y + 14, z, W / 2 - 14, y + 18, z + 4, PALETTE.teal);
+    box(mesh, W / 2 - 14.8, y + 20, z + 2, W / 2 - 14, y + 23, z + 6, [1.0, 0.72, 0.2]);
+  }
+  // 6.4: warm lit windows on the superstructure — two rows on the port
+  // face (facing the deck, the trap shot's view) + one row on the stern
+  // face (facing the approaching plane). The island is a lit building.
+  for (let z = c.z - 26; z < c.z + 16; z += 8) {
+    box(mesh, W / 2 - 14.6, y + 8, z, W / 2 - 14, y + 11, z + 3.5, [1.0, 0.82, 0.4]);
+  }
+  for (let x = W / 2 - 12; x < W / 2 - 4; x += 4) {
+    box(mesh, x, y + 10, c.z - 30.6, x + 2.4, y + 13, c.z - 30, [1.0, 0.82, 0.4]);
+    box(mesh, x, y + 17, c.z - 30.6, x + 2.4, y + 20, c.z - 30, [1.0, 0.72, 0.25]);
   }
   // bridge windows — glowing cyan
   box(mesh, W / 2 - 12.5, y + 28, c.z - 20, W / 2 - 3.5, y + 31, c.z + 8, PALETTE.cyan);

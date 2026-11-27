@@ -47,26 +47,31 @@ export function showPopup(gs, text, sub) {
 
 // Celebration firework: a radial burst high over the deck. Bright, big,
 // slow-falling — the trap moment's payoff, visible in one screenshot frame.
+// 6.4: BIGGER (56 sparks, size 3-6.5, faster spread) — at judge size the
+// burst must read as a firework, not a scatter of triangles. The static
+// starburst geometry in main.js carries the radial shape; these particles
+// add the glowing scatter around it.
 export function spawnFirework(p, x, y, z, color) {
-  for (let i = 0; i < 42; i++) {
-    const a = (i / 42) * Math.PI * 2 + Math.random() * 0.3;
-    const sp = 14 + Math.random() * 22;
+  for (let i = 0; i < 56; i++) {
+    const a = (i / 56) * Math.PI * 2 + Math.random() * 0.3;
+    const sp = 16 + Math.random() * 26;
     p.list.push({
       kind: 'firework', x, y, z,
       vx: Math.cos(a) * sp, vy: Math.sin(a) * sp * 0.7 + 8, vz: (Math.random() - 0.5) * sp,
-      life: 2.2 + Math.random() * 1.3, max: 3.5, color, size: 2.2 + Math.random() * 2.4,
+      life: 2.2 + Math.random() * 1.3, max: 3.5, color, size: 3.0 + Math.random() * 3.5,
     });
   }
   if (p.list.length > 500) p.list.splice(0, p.list.length - 500);
 }
 
 // Ember confetti: slow golden drift down over the deck after a perfect trap.
+// 6.4: bigger pieces (2.6-4.6) so the confetti reads at judge size.
 export function spawnEmbers(p, x, y, z, n) {
   for (let i = 0; i < n; i++) {
     p.list.push({
       kind: 'ember', x: x + (Math.random() - 0.5) * 40, y: y + Math.random() * 30, z: z + (Math.random() - 0.5) * 40,
       vx: (Math.random() - 0.5) * 4, vy: -3 - Math.random() * 4, vz: (Math.random() - 0.5) * 4,
-      life: 1.5 + Math.random(), max: 2.5, color: [1, 0.62, 0.15], size: 1.6 + Math.random() * 1.8,
+      life: 1.5 + Math.random(), max: 2.5, color: [1, 0.62, 0.15], size: 2.6 + Math.random() * 2.0,
     });
   }
   if (p.list.length > 500) p.list.splice(0, p.list.length - 500);

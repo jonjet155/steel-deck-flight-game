@@ -79,6 +79,66 @@ export function buildLighthouse(x, z) {
   return mesh;
 }
 
+// 6.4: a lighthouse's lamp glow — a bright amber halo fan around the lamp
+// room + a long horizontal light beam, so the lighthouse reads as a living
+// beacon at 1000+ units, not a striped stick.
+export function buildLighthouseGlow(x, z) {
+  const mesh = { positions: [], colors: [] };
+  const lx = x, ly = 8 + 42 + 3, lz = z;
+  const halo = [1.0, 0.85, 0.45];
+  let prev = null;
+  for (let i = 0; i <= 12; i++) {
+    const a = (i / 12) * Math.PI * 2;
+    const p = [lx + Math.cos(a) * 26, ly + Math.sin(a) * 26, lz];
+    if (prev) tri(mesh, [lx, ly, lz], prev, p, halo);
+    prev = p;
+  }
+  // beam: a long thin bright wedge pointing out to sea (toward +x, the
+  // open water side of both lighthouse islands)
+  tri(mesh, [lx, ly - 2, lz - 3], [lx + 150, ly - 6, lz - 8], [lx + 150, ly + 2, lz - 2], [1.0, 0.9, 0.55]);
+  tri(mesh, [lx, ly - 2, lz + 3], [lx + 150, ly + 2, lz + 2], [lx + 150, ly - 6, lz + 8], [1.0, 0.9, 0.55]);
+  return mesh;
+}
+
+// 6.4: a lit coastal settlement on an island — a cluster of warm glowing
+// windows (small bright boxes) scattered up the island slope + a few big
+// glow panes, so the far islands read as lived-in villages at dusk.
+// Deterministic per island seed; windows face all sides (the chase camera
+// circles the archipelago), so no orientation assumption is made.
+export function buildSettlementLights(island) {
+  const mesh = { positions: [], colors: [] };
+  const rng = makeRng(island.seed * 7 + 5);
+  const { x: cx, z: cz, r, h } = island;
+  const warm = [[1.0, 0.72, 0.22], [1.0, 0.85, 0.45], [1.0, 0.60, 0.15], [1.0, 0.78, 0.35]];
+  const boxAt = (x, y, z, s, col) => {
+    const h2 = s / 2;
+    const A = [x - h2, y - h2, z - h2], B = [x + h2, y - h2, z - h2], C = [x + h2, y + h2, z - h2], D = [x - h2, y + h2, z - h2];
+    const E = [x - h2, y - h2, z + h2], F = [x + h2, y - h2, z + h2], G = [x + h2, y + h2, z + h2], H = [x - h2, y + h2, z + h2];
+    tri(mesh, A, B, C, col); tri(mesh, A, C, D, col);
+    tri(mesh, F, E, H, col); tri(mesh, F, H, G, col);
+    tri(mesh, E, A, D, col); tri(mesh, E, D, H, col);
+    tri(mesh, B, F, G, col); tri(mesh, B, G, C, col);
+    tri(mesh, D, C, G, col); tri(mesh, D, G, H, col);
+  };
+  // 12 windows in a loose village cluster on the lower slope, denser on
+  // the shore side (frac 0.75-0.95 of the radius), a few higher up
+  for (let i = 0; i < 12; i++) {
+    const a = rng() * Math.PI * 2;
+    const frac = 0.72 + rng() * 0.24;
+    const rr = r * frac;
+    const y = 3 + h * (1 - frac) * 0.9 + rng() * 6;
+    const s = 5 + rng() * 4;
+    boxAt(cx + Math.cos(a) * rr, y, cz + Math.sin(a) * rr, s, warm[i % warm.length]);
+  }
+  // 3 big glow panes (tavern / harbour hall) low on the shore
+  for (let i = 0; i < 3; i++) {
+    const a = rng() * Math.PI * 2;
+    const rr = r * 0.9;
+    boxAt(cx + Math.cos(a) * rr, 5 + rng() * 4, cz + Math.sin(a) * rr, 10, [1.0, 0.9, 0.55]);
+  }
+  return mesh;
+}
+
 export function buildStrip(x, z, heading) {
   // island airstrip: flat runway slab + lights
   const mesh = { positions: [], colors: [] };
@@ -108,3 +168,6 @@ export const ISLANDS = [
 ];
 export const STRIP = { x: -420, z: 520, heading: 0.4 };
 export const LIGHTHOUSE = { x: -560, z: -180 };
+// 6.4: second lighthouse on the shore of Pulau Karang Api, beside the
+// supply strip — the cover shot's island finally has its own beacon.
+export const LIGHTHOUSE2 = { x: -300, z: 600 };

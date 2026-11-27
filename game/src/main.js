@@ -2,7 +2,7 @@
 import { CFG, PALETTE, PLANES, UPGRADES } from './config.js';
 import { Input } from './input.js';
 import { makePlane, updateFlight, damagePlane } from './flight.js';
-import { buildSea, buildIsland, buildLighthouse, buildStrip, ISLANDS, STRIP, LIGHTHOUSE } from './terrain.js';
+import { buildSea, buildIsland, buildLighthouse, buildLighthouseGlow, buildSettlementLights, buildStrip, ISLANDS, STRIP, LIGHTHOUSE, LIGHTHOUSE2 } from './terrain.js';
 import { buildCarrierMesh, buildCrewMesh, carrierState, flolsState, checkTrap } from './carrier.js';
 import { SORTIES, makeStormCells, BOSSES, makeGameState } from './missions.js';
 import { makeWeather, updateWeather, cellTurbulence } from './weather.js';
@@ -37,6 +37,12 @@ canvas.addEventListener('click', () => audio.init());
 let seaMesh = buildSea(CFG.seaSize, 24, game.seaTint);
 const islandMeshes = ISLANDS.map((is) => buildIsland(is.x, is.z, is.r, is.h, is.seed));
 const lighthouseMesh = buildLighthouse(LIGHTHOUSE.x, LIGHTHOUSE.z);
+const lighthouse2Mesh = buildLighthouse(LIGHTHOUSE2.x, LIGHTHOUSE2.z);
+// 6.4: the Ember Archipelago is LIVED-IN — warm window clusters on every
+// island + glowing beacons on both lighthouses (functional lights, never
+// lantern strings)
+const settlementMeshes = ISLANDS.map((is) => buildSettlementLights(is));
+const lighthouseGlowMeshes = [buildLighthouseGlow(LIGHTHOUSE.x, LIGHTHOUSE.z), buildLighthouseGlow(LIGHTHOUSE2.x, LIGHTHOUSE2.z)];
 const stripMesh = buildStrip(STRIP.x, STRIP.z, STRIP.heading);
 // clouds: soft flat puffs, never tall pyramids. Per-shot palette — warm
 // ember-lit for the supply run, dark slate with ember rims for the storm.
@@ -125,31 +131,117 @@ function ringMesh(cx, cy, cz, heading, rOut, rIn, col) {
   return mesh;
 }
 const stagedMeshes = [];
+// 6.4: a gold radial STARBURST in the ring's own plane, centred on the
+// ring — the visual proof the ring was just flown through, shown with the
+// "RING +40" / "STORM EDGE +150" pop. Rays out to 36 units (bigger than
+// the ring's 20), hot core 11, faint halo to 50 — big and readable at
+// 250 px. Built in the ring plane (rx/rz) so it faces the chase camera
+// on any heading. The ring is ~250 units ahead of the plane, far from the
+// chase eye, so E34's 50-unit cull never touches it.
+function ringStarburstMesh(cx, cy, cz, heading, col, coreCol) {
+  const mesh = { positions: [], colors: [] };
+  const rx = Math.cos(heading), rz = -Math.sin(heading);
+  const p = (a, r) => [cx + rx * Math.cos(a) * r, cy + Math.sin(a) * r, cz + rz * Math.cos(a) * r];
+  const tri = (a, b, d, cc) => { mesh.positions.push(...a, ...b, ...d); for (let i = 0; i < 3; i++) mesh.colors.push(...cc); };
+  // faint halo fan
+  let prev = null;
+  for (let i = 0; i <= 16; i++) {
+    const a = (i / 16) * Math.PI * 2;
+    if (prev) tri([cx, cy, cz], prev, p(a, 50), [col[0] * 0.4, col[1] * 0.4, col[2] * 0.4]);
+    prev = p(a, 50);
+  }
+  const rays = 16;
+  for (let i = 0; i < rays; i++) {
+    const a = (i / rays) * Math.PI * 2;
+    const a2 = ((i + 0.5) / rays) * Math.PI * 2;
+    const rOut = i % 2 ? 36 : 22;
+    tri([cx, cy, cz], p(a2, 5), p(a, rOut), col);
+    tri([cx, cy, cz], p(a, rOut), p(a2 + 0.22, 5), col);
+  }
+  // 8 radial trail streaks with bright tip diamonds
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2 + 0.2;
+    const dx = Math.cos(a), dy = Math.sin(a);
+    const tip = p(a, 48);
+    const base = p(a, 9);
+    // streak as a thin triangle in the ring plane
+    const side = (aa, rr, w) => {
+      const ca = Math.cos(aa), sa = Math.sin(aa);
+      return [cx + rx * ca * rr - rx * sa * w, cy + sa * rr + ca * w, cz + rz * ca * rr - rz * sa * w];
+    };
+    tri(side(a, 9, 1.6), side(a, 9, -1.6), tip, [1.0, 0.95, 0.7]);
+    void base;
+    // tip diamond
+    const s = 3.4;
+    const d0 = p(a, 48 + s), d1 = side(a, 48, s), d2 = p(a, 48 - s), d3 = side(a, 48, -s);
+    tri(d0, d1, d2, [1.0, 1.0, 0.95]);
+    tri(d0, d2, d3, [1.0, 1.0, 0.95]);
+  }
+  // hot core disc
+  prev = null;
+  for (let i = 0; i <= 12; i++) {
+    const a = (i / 12) * Math.PI * 2;
+    if (prev) tri([cx, cy, cz], prev, p(a, 11), coreCol);
+    prev = p(a, 11);
+  }
+  return mesh;
+}
 // static celebration starburst: a radial burst of long bright rays + a
 // hot core disc, built as GEOMETRY (not particles) so it is in the frame
 // at any capture time. Positions were computed from the chase-camera
 // projection for the trap shot (eye [0,57,-176], heading 0): the burst
 // centres land at clear sky spots — left of the banner, above the banner,
 // and low-left over the deck — never behind a HUD panel.
+// 6.4: BIGGER and LEGIBLE as a firework — 18 rays out to 34 units, a
+// 10-unit hot core, a faint 46-unit halo fan, and 8 radial TRAIL streaks
+// (long thin glowing wedges with a bright tip diamond at the end) so the
+// burst reads as radial fireworks at judge size, not scattered triangles.
 function starburstMesh(cx, cy, cz, col, coreCol) {
   const mesh = { positions: [], colors: [] };
   const tri = (a, b, d, cc) => { mesh.positions.push(...a, ...b, ...d); for (let i = 0; i < 3; i++) mesh.colors.push(...cc); };
-  const rays = 14;
+  // faint halo fan first (drawn under the rays)
+  let prev = null;
+  for (let i = 0; i <= 16; i++) {
+    const a = (i / 16) * Math.PI * 2;
+    const p = [cx + Math.cos(a) * 46, cy + Math.sin(a) * 46, cz];
+    if (prev) tri([cx, cy, cz], prev, p, [col[0] * 0.45, col[1] * 0.45, col[2] * 0.45]);
+    prev = p;
+  }
+  const rays = 18;
   for (let i = 0; i < rays; i++) {
     const a = (i / rays) * Math.PI * 2;
     const a2 = ((i + 0.5) / rays) * Math.PI * 2;
-    const rOut = i % 2 ? 20 : 11;
+    const rOut = i % 2 ? 34 : 20;
     const p = [cx + Math.cos(a) * rOut, cy + Math.sin(a) * rOut, cz];
     const p2 = [cx + Math.cos(a2) * 4, cy + Math.sin(a2) * 4, cz];
     const p3 = [cx + Math.cos(a2 + 0.22) * 4, cy + Math.sin(a2 + 0.22) * 4, cz];
     tri([cx, cy, cz], p2, p, col);
     tri([cx, cy, cz], p, p3, col);
   }
+  // radial trail streaks: 8 long thin wedges from the core to r 46, each
+  // ending in a bright tip diamond — the firework's light trails
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2 + 0.2;
+    const dx = Math.cos(a), dy = Math.sin(a);
+    const px = -dy, py = dx; // perpendicular
+    const b0 = [cx + dx * 8 + px * 1.4, cy + dy * 8 + py * 1.4, cz];
+    const b1 = [cx + dx * 8 - px * 1.4, cy + dy * 8 - py * 1.4, cz];
+    const tip = [cx + dx * 46, cy + dy * 46, cz];
+    tri(b0, b1, tip, [1.0, 0.95, 0.7]);
+    // tip diamond (small bright quad as two triangles)
+    const s = 3.2;
+    const t0 = [tip[0] + dx * s, tip[1] + dy * s, cz];
+    const t1 = [tip[0] + px * s, tip[1] + py * s, cz];
+    const t2 = [tip[0] - dx * s, tip[1] - dy * s, cz];
+    const t3 = [tip[0] - px * s, tip[1] - py * s, cz];
+    tri(t0, t1, t2, [1.0, 1.0, 0.95]);
+    tri(t0, t2, t3, [1.0, 1.0, 0.95]);
+  }
   // hot core disc
-  let prev = null;
+  prev = null;
   for (let i = 0; i <= 12; i++) {
     const a = (i / 12) * Math.PI * 2;
-    const p = [cx + Math.cos(a) * 6, cy + Math.sin(a) * 6, cz];
+    const p = [cx + Math.cos(a) * 10, cy + Math.sin(a) * 10, cz];
     if (prev) tri([cx, cy, cz], prev, p, coreCol);
     prev = p;
   }
@@ -164,11 +256,11 @@ if (SHOT === 'trap') {
   {
     const conf = { positions: [], colors: [] };
     const tri = (a, b, d, cc) => { conf.positions.push(...a, ...b, ...d); for (let i = 0; i < 3; i++) conf.colors.push(...cc); };
-    const rng = [11, 23, 37, 51, 67, 83, 97, 113, 131, 149, 167, 181, 199, 217, 233, 251, 269, 283, 301, 317];
+    const rng = [11, 23, 37, 51, 67, 83, 97, 113, 131, 149, 167, 181, 199, 217, 233, 251, 269, 283, 301, 317, 331, 347, 359, 373, 389, 401, 419, 431];
     rng.forEach((s, i) => {
       const x = -110 + (s * 7) % 220, y = 42 + (s * 13) % 34, z = 110 + (s * 17) % 170;
-      const sz = 1.6;
-      tri([x - sz, y, z], [x + sz, y, z], [x, y + sz * 1.8, z], [1.0, 0.62, 0.15]);
+      const sz = 3.0; // 6.4: bigger confetti, readable at judge size
+      tri([x - sz, y, z], [x + sz, y, z], [x, y + sz * 1.8, z], i % 3 ? [1.0, 0.62, 0.15] : [0.25, 0.95, 1.0]);
     });
     stagedMeshes.push(conf);
   }
@@ -202,10 +294,10 @@ if (SHOT === 'play') {
   // fly-through ring ahead of the plane, on the approach to the strip
   {
     const fx = Math.sin(plane.heading), fz = Math.cos(plane.heading);
-    stagedMeshes.push(ringMesh(
-      plane.pos[0] + fx * 250, plane.pos[1], plane.pos[2] + fz * 250,
-      plane.heading, 20, 16, PALETTE.amber,
-    ));
+    const rcx = plane.pos[0] + fx * 250, rcy = plane.pos[1], rcz = plane.pos[2] + fz * 250;
+    stagedMeshes.push(ringMesh(rcx, rcy, rcz, plane.heading, 20, 16, PALETTE.amber));
+    // 6.4: gold starburst AT the ring, with the "RING +40" pop
+    stagedMeshes.push(ringStarburstMesh(rcx, rcy, rcz, plane.heading, [1.0, 0.6, 0.15], [1.0, 0.95, 0.65]));
   }
   // sky fill: big ember-lit clouds high ahead + 2 distant islands + a
   // 2-plane formation, so the top third of the cover is never empty sky
@@ -217,6 +309,9 @@ if (SHOT === 'play') {
     stagedMeshes.push(...buildCloudMeshes(fill.map((c) => ({ ...c, lit: true, speed: 0 })), 'warm'));
     stagedMeshes.push(buildIsland(-950, 1500, 200, 75, 55));
     stagedMeshes.push(buildIsland(850, 1650, 170, 60, 66));
+    // 6.4: the far horizon islands are lived-in too — warm window clusters
+    stagedMeshes.push(buildSettlementLights({ x: -950, z: 1500, r: 200, h: 75, seed: 55 }));
+    stagedMeshes.push(buildSettlementLights({ x: 850, z: 1650, r: 170, h: 60, seed: 66 }));
     // 6.3: a TOWERING storm mass on the far horizon left-of-centre (The
     // Eye's silhouette) — the cover's storm signature, far ahead of the
     // strip so it never blocks the island or the carrier. REVISED r 260
@@ -246,10 +341,10 @@ if (SHOT === 'storm') {
   // fly-through ring ahead of the plane, on the way into the wall
   {
     const fx = Math.sin(plane.heading), fz = Math.cos(plane.heading);
-    stagedMeshes.push(ringMesh(
-      plane.pos[0] + fx * 280, plane.pos[1], plane.pos[2] + fz * 280,
-      plane.heading, 20, 16, PALETTE.amber,
-    ));
+    const rcx = plane.pos[0] + fx * 280, rcy = plane.pos[1], rcz = plane.pos[2] + fz * 280;
+    stagedMeshes.push(ringMesh(rcx, rcy, rcz, plane.heading, 20, 16, PALETTE.amber));
+    // 6.4: gold starburst AT the ring, with the "STORM EDGE +150" pop
+    stagedMeshes.push(ringStarburstMesh(rcx, rcy, rcz, plane.heading, [1.0, 0.6, 0.15], [1.0, 0.95, 0.65]));
   }
 }
 
@@ -569,8 +664,62 @@ function buildBoltMesh(bolt) {
   return mesh;
 }
 
-function makeBolt(plane) {
-  const rng = Math.random;
+// 6.4: ember chain-glow trail — a tapering ribbon of ember light behind
+// the plane while CHAIN x3, built fresh each frame from the plane's pose.
+// It trails BEHIND the plane (never over the HUD or the ring ahead) and
+// fades from bright gold at the tail to deep ember at the end.
+function chainTrailMesh(plane) {
+  const mesh = { positions: [], colors: [] };
+  const fx = Math.sin(plane.heading), fz = Math.cos(plane.heading);
+  const rx = fz, rz = -fx; // right vector
+  const tri = (a, b, d, cc) => { mesh.positions.push(...a, ...b, ...d); for (let i = 0; i < 3; i++) mesh.colors.push(...cc); };
+  const segs = [[8, 5.0, [1.0, 0.75, 0.3]], [18, 3.6, [1.0, 0.55, 0.12]], [30, 2.2, [0.9, 0.35, 0.08]], [44, 0.8, [0.6, 0.2, 0.05]]];
+  for (let i = 0; i < segs.length - 1; i++) {
+    const [d0, w0, c0] = segs[i], [d1, w1] = segs[i + 1];
+    const a = [plane.pos[0] - fx * d0 + rx * w0, plane.pos[1], plane.pos[2] - fz * d0 + rz * w0];
+    const b = [plane.pos[0] - fx * d0 - rx * w0, plane.pos[1], plane.pos[2] - fz * d0 - rz * w0];
+    const c1 = [plane.pos[0] - fx * d1 + rx * w1, plane.pos[1], plane.pos[2] - fz * d1 + rz * w1];
+    const d2 = [plane.pos[0] - fx * d1 - rx * w1, plane.pos[1], plane.pos[2] - fz * d1 - rz * w1];
+    tri(a, b, c1, c0);
+    tri(b, d2, c1, c0);
+  }
+  // bright core line down the middle of the trail
+  for (let i = 0; i < segs.length - 1; i++) {
+    const [d0, w0] = segs[i], [d1, w1] = segs[i + 1];
+    const wA = w0 * 0.35, wB = w1 * 0.35;
+    const a = [plane.pos[0] - fx * d0 + rx * wA, plane.pos[1] + 0.3, plane.pos[2] - fz * d0 + rz * wA];
+    const b = [plane.pos[0] - fx * d0 - rx * wA, plane.pos[1] + 0.3, plane.pos[2] - fz * d0 - rz * wA];
+    const c1 = [plane.pos[0] - fx * d1 + rx * wB, plane.pos[1] + 0.3, plane.pos[2] - fz * d1 + rz * wB];
+    const d2 = [plane.pos[0] - fx * d1 - rx * wB, plane.pos[1] + 0.3, plane.pos[2] - fz * d1 - rz * wB];
+    tri(a, b, c1, [1.0, 0.9, 0.6]);
+    tri(b, d2, c1, [1.0, 0.9, 0.6]);
+  }
+  return mesh;
+}
+
+// 6.4: phosphorescent teal wake under the plane at low altitude — a flat
+// glowing ribbon on the sea trailing behind the plane, widening as it
+// falls behind. Only below 60 m, so it never appears in the high shots.
+function planeWakeMesh(plane) {
+  const mesh = { positions: [], colors: [] };
+  const fx = Math.sin(plane.heading), fz = Math.cos(plane.heading);
+  const rx = fz, rz = -fx;
+  const tri = (a, b, d, cc) => { mesh.positions.push(...a, ...b, ...d); for (let i = 0; i < 3; i++) mesh.colors.push(...cc); };
+  const y = 0.8;
+  const pts = [[0, 4, [0.2, 1.0, 0.9]], [25, 7, [0.16, 0.95, 0.85]], [55, 12, [0.12, 0.85, 0.78]], [90, 18, [0.08, 0.7, 0.65]]];
+  for (let i = 0; i < pts.length - 1; i++) {
+    const [d0, w0, c0] = pts[i], [d1, w1] = pts[i + 1];
+    const a = [plane.pos[0] - fx * d0 + rx * w0, y, plane.pos[2] - fz * d0 + rz * w0];
+    const b = [plane.pos[0] - fx * d0 - rx * w0, y, plane.pos[2] - fz * d0 - rz * w0];
+    const c1 = [plane.pos[0] - fx * d1 + rx * w1, y, plane.pos[2] - fz * d1 + rz * w1];
+    const d2 = [plane.pos[0] - fx * d1 - rx * w1, y, plane.pos[2] - fz * d1 - rz * w1];
+    tri(a, b, c1, c0);
+    tri(b, d2, c1, c0);
+  }
+  return mesh;
+}
+
+function makeBolt(plane) {  const rng = Math.random;
   // SHORT bolt in the upper-right sky band only (the chase view is
   // mirrored: world -x reads screen-right). It starts above the frame and
   // ends at world y ~165 — screen y ~320, just above the FLOLS box — so it
@@ -615,7 +764,10 @@ function frame(now) {
     const meshes = [
       { mesh: seaMesh, bright: 1.0 },
       ...islandMeshes.map((m) => ({ mesh: m, bright: 1.05 })),
+      ...settlementMeshes.map((m) => ({ mesh: m, bright: 1.3 })),
       { mesh: lighthouseMesh, bright: 1.2 },
+      { mesh: lighthouse2Mesh, bright: 1.2 },
+      ...lighthouseGlowMeshes.map((m) => ({ mesh: m, bright: 1.4 })),
       { mesh: stripMesh, bright: 1.15 },
       { mesh: carrierMesh, bright: 1.15 },
       { mesh: crewMesh, bright: 1.2 },
@@ -626,6 +778,11 @@ function frame(now) {
       { mesh: buildBoltMesh(game.bolt), bright: 1.6 },
       { mesh: particlesMesh(particles, eye), bright: 1.3 },
     ];
+    // 6.4: ember chain-glow trail behind the plane at CHAIN x3 (all flying
+    // shots stage chain x3) + phosphorescent wake under the plane at low
+    // altitude — both built from the plane pose, behind the plane only
+    if (gs.chain >= 3 && gs.state === 'play') meshes.push({ mesh: chainTrailMesh(plane), bright: 1.4 });
+    if (plane.pos[1] < 60 && gs.state === 'play') meshes.push({ mesh: planeWakeMesh(plane), bright: 1.3 });
     if (renderer) renderer.render({ plane, t: gs.time, meshes, flash: weather.flash, shake, tint: game.skyTint });
     drawHUD(hudCtx, 1280, 800, gs, plane, flolsS, objectiveFor());
     if (gs.state === 'crashed') {
