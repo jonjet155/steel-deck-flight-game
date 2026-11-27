@@ -21,7 +21,7 @@ export function applyShot(game, params) {
     // 6.3: ember-dominant dusk — deep ember zenith, ember mid, bright sun;
     // sea dark teal with a bright glowing-teal light tone
     game.skyTint = { top: [0.42, 0.20, 0.10], mid: [0.95, 0.45, 0.12], sun: [1.0, 0.62, 0.15] };
-    game.seaTint = { deep: [0.02, 0.24, 0.26], light: [0.10, 0.58, 0.55] };
+    game.seaTint = { deep: [0.03, 0.30, 0.32], light: [0.12, 0.62, 0.58] };
     game.cloudMode = 'warm';
   } else if (shot === 'trap') {
     gs.state = 'play';

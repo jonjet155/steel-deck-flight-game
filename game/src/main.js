@@ -79,15 +79,17 @@ function buildStormCell(x, z, r, y) {
     tri(p0, p1, m1, band);
     tri(p0, m1, m0, band);
     tri(m0, m1, apex, top);
-    // 6.3 ember rim: a THICK glowing band along the lower edge on the
-    // sun-facing side (cos > 0.2) — a quad strip rising a fifth of the
-    // radius, bright ember, so the rim reads at judge size
+    // 6.3 ember rim, REVISED: the first attempt's band (a fifth of the
+    // radius tall, on every sun-facing segment) read as a giant flat
+    // orange FACE on the cone. Now a THIN glowing line — one twentieth of
+    // the radius tall, hugging the surface, on the most sun-facing
+    // segments only (cos > 0.5) — a rim, never a face.
     const midA = (a0 + a1) / 2;
-    if (Math.cos(midA) > 0.2) {
-      const q0 = [x + Math.cos(a0) * r * 0.99, y - 8, z + Math.sin(a0) * r * 0.99];
-      const q1 = [x + Math.cos(a1) * r * 0.99, y - 8, z + Math.sin(a1) * r * 0.99];
-      const q2 = [x + Math.cos(a1) * r * 0.88, y + r * 0.20, z + Math.sin(a1) * r * 0.88];
-      const q3 = [x + Math.cos(a0) * r * 0.88, y + r * 0.20, z + Math.sin(a0) * r * 0.88];
+    if (Math.cos(midA) > 0.5) {
+      const q0 = [x + Math.cos(a0) * r * 0.995, y - 8, z + Math.sin(a0) * r * 0.995];
+      const q1 = [x + Math.cos(a1) * r * 0.995, y - 8, z + Math.sin(a1) * r * 0.995];
+      const q2 = [x + Math.cos(a1) * r * 0.95, y + r * 0.05, z + Math.sin(a1) * r * 0.95];
+      const q3 = [x + Math.cos(a0) * r * 0.95, y + r * 0.05, z + Math.sin(a0) * r * 0.95];
       tri(q0, q1, q2, [1.0, 0.50, 0.12]);
       tri(q0, q2, q3, [1.0, 0.50, 0.12]);
     }
@@ -217,8 +219,9 @@ if (SHOT === 'play') {
     stagedMeshes.push(buildIsland(850, 1650, 170, 60, 66));
     // 6.3: a TOWERING storm mass on the far horizon left-of-centre (The
     // Eye's silhouette) — the cover's storm signature, far ahead of the
-    // strip so it never blocks the island or the carrier
-    stagedMeshes.push(buildStormCell(-500, 200, 260, 70));
+    // strip so it never blocks the island or the carrier. REVISED r 260
+    // -> 220: the bigger mass swallowed the sun and read as a flat wall.
+    stagedMeshes.push(buildStormCell(-500, 200, 220, 70));
     // 2-plane formation: small dark deltas with amber noses, high ahead
     for (const [fx0, fy, fz0] of [[-220, 280, 450], [-180, 285, 470]]) {
       const m = { positions: [], colors: [] };
@@ -232,12 +235,14 @@ if (SHOT === 'play') {
   }
 }
 if (SHOT === 'storm') {
-  // storm wall: 3 TOWERING dark masses ahead (6.3: r 210-260, apex over
-  // one radius high), so the shot reads as a storm intercept with no deck
-  // anywhere in frame
-  stagedMeshes.push(buildStormCell(-260, 620, 230, 130));
-  stagedMeshes.push(buildStormCell(120, 800, 260, 140));
-  stagedMeshes.push(buildStormCell(480, 680, 210, 120));
+  // storm wall: 3 TOWERING dark masses ahead (6.3: apex over one radius
+  // high), so the shot reads as a storm intercept with no deck anywhere
+  // in frame. REVISED: the first attempt (r 210-260 at z 620-800) filled
+  // the whole frame as flat walls — smaller radii, pushed further out,
+  // so ember sky shows between the masses.
+  stagedMeshes.push(buildStormCell(-320, 700, 190, 130));
+  stagedMeshes.push(buildStormCell(140, 880, 210, 140));
+  stagedMeshes.push(buildStormCell(520, 720, 180, 120));
   // fly-through ring ahead of the plane, on the way into the wall
   {
     const fx = Math.sin(plane.heading), fz = Math.cos(plane.heading);

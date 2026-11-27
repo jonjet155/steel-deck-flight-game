@@ -23,9 +23,12 @@ export function buildSea(size, segments, colors) {
         deep[1] * w + light[1] * (1 - w),
         deep[2] * w + light[2] * (1 - w),
       ];
-      // 6.3 bioluminescence: ~1 in 8 cells is a glowing wave crest —
-      // bright teal that reads as a lit sea even at judge size
-      if (rng() > 0.87) c = [0.14, 0.90, 0.82];
+      // 6.3 bioluminescence, REVISED: the first attempt made ~1 in 8 sea
+      // cells a BRIGHT cyan square (108 units wide) — a checkerboard of
+      // giant cyan rectangles. Now ~1 in 16 cells gets only a SUBTLE lift
+      // over the deep tone, so the sea reads as dark glowing teal with
+      // faint light ripples, never as tiles.
+      if (rng() > 0.94) c = [0.07, 0.45, 0.42];
       // ember sunset shimmer near the horizon centre line, stronger now
       const cx = (x0 + x1) / 2;
       const shimmer = Math.max(0, 1 - Math.abs(cx) / (size * 0.35)) * 0.22;
