@@ -20,9 +20,18 @@ export function updateParticles(p, dt) {
   p.list = p.list.filter((q) => q.life > 0);
 }
 // Build a triangle mesh for all live particles (camera-facing quads approximated as small triangles).
-export function particlesMesh(p) {
+// Particles within 50 units of the chase-camera eye are culled: a spark
+// that drifts to the camera blows up into a giant triangle at the frame
+// edge (the trap shot's bottom-edge pyramids were exactly this). Trap
+// sparks/steam/embers spawn at the plane, ~40 from the eye, so they are
+// culled too — the fireworks (300+ out) carry the celebration instead.
+export function particlesMesh(p, eye) {
   const mesh = { positions: [], colors: [] };
   for (const q of p.list) {
+    if (eye) {
+      const dx = q.x - eye[0], dy = q.y - eye[1], dz = q.z - eye[2];
+      if (dx * dx + dy * dy + dz * dz < 2500) continue;
+    }
     const s = q.size;
     const a = q.life / q.max;
     const col = [q.color[0] * a + 0.2, q.color[1] * a + 0.2, q.color[2] * a + 0.2];

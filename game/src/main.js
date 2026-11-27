@@ -74,12 +74,17 @@ function buildStormCell(x, z, r, y) {
     const m0 = [x + Math.cos(a0) * r * 0.55, y + r * 0.28, z + Math.sin(a0) * r * 0.55];
     const m1 = [x + Math.cos(a1) * r * 0.55, y + r * 0.28, z + Math.sin(a1) * r * 0.55];
     const apex = [x, y + r * 0.5, z];
-    // ember-lit rim: a NARROW sliver on the sun-facing lower band only
-    // (2 of 10 segments), never a whole orange face
-    const band = Math.cos(a0) > 0.75 ? [0.5, 0.25, 0.12] : (i % 2 ? dark : dark2);
+    // ember-lit rim: a THIN sliver along the base edge on the sun-facing
+    // side only (3 of 10 segments) — a glowing line, never an orange face.
+    // The lower band itself stays dark slate.
+    const band = i % 2 ? dark : dark2;
     tri(p0, p1, m1, band);
     tri(p0, m1, m0, band);
     tri(m0, m1, apex, top);
+    if (Math.cos(a0) > 0.6) {
+      const mid = [x + Math.cos((a0 + a1) / 2) * r * 0.97, y - 4, z + Math.sin((a0 + a1) / 2) * r * 0.97];
+      tri(p0, p1, mid, [0.5, 0.25, 0.12]);
+    }
   }
   return mesh;
 }
@@ -518,6 +523,10 @@ function frame(now) {
     const { mesh: carrierMesh, wireZ, flols } = buildCarrierMesh(game.carrierT);
     const crewMesh = buildCrewMesh(game.carrierT);
     const flolsS = flolsState(plane, wireZ);
+    // chase-camera eye (same formula as the renderer): particles too close
+    // to it are culled inside particlesMesh
+    const pfx = Math.sin(plane.heading), pfz = Math.cos(plane.heading);
+    const eye = [plane.pos[0] - pfx * 26, plane.pos[1] + 9, plane.pos[2] - pfz * 26];
     const meshes = [
       { mesh: seaMesh, bright: 1.0 },
       ...islandMeshes.map((m) => ({ mesh: m, bright: 1.05 })),
@@ -530,7 +539,7 @@ function frame(now) {
       ...stagedMeshes.map((m) => ({ mesh: m, bright: 1.0 })),
       { mesh: buildRainMesh(weather, plane), bright: 1.0 },
       { mesh: buildBoltMesh(game.bolt), bright: 1.6 },
-      { mesh: particlesMesh(particles), bright: 1.3 },
+      { mesh: particlesMesh(particles, eye), bright: 1.3 },
     ];
     if (renderer) renderer.render({ plane, t: gs.time, meshes, flash: weather.flash, shake, tint: game.skyTint });
     drawHUD(hudCtx, 1280, 800, gs, plane, flolsS, objectiveFor());
