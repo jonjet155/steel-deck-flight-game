@@ -202,8 +202,8 @@ export function buildCrewMesh(t, cheer) {
     box(mesh, x - 1.3, c.y + 8.5 + bob, z - 1.3, x + 1.3, c.y + 10.8 + bob, z + 1.3, [0.95, 0.95, 0.92]);
     if (cheer) {
       // raised arms: thin bright sticks above the shoulders, waving
-      box(mesh, x - 2.1, c.y + 8 + bob, z - 0.5, x - 1.3, c.y + 13.5 + bob, z + 0.5, [1.0, 0.85, 0.1]);
-      box(mesh, x + 1.3, c.y + 8 + bob, z - 0.5, x + 2.1, c.y + 13.5 + bob, z + 0.5, [1.0, 0.85, 0.1]);
+      box(mesh, x - 2.4, c.y + 8 + bob, z - 0.6, x - 1.2, c.y + 14.5 + bob, z + 0.6, [1.0, 0.85, 0.1]);
+      box(mesh, x + 1.2, c.y + 8 + bob, z - 0.6, x + 2.4, c.y + 14.5 + bob, z + 0.6, [1.0, 0.85, 0.1]);
     }
   });
   return mesh;

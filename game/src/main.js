@@ -251,38 +251,42 @@ function vortexRingMesh(cx, cy, cz, heading) {
   const tri = (a, b, d, cc) => { mesh.positions.push(...a, ...b, ...d); for (let i = 0; i < 3; i++) mesh.colors.push(...cc); };
   const P = (a, r, back) => [cx + rx * Math.cos(a) * r - fx * back, cy + Math.sin(a) * r, cz + rz * Math.cos(a) * r - fz * back];
   const backOf = (a) => Math.sin(a * 2) * 14;
-  // eye disc: bright calm centre (r 0..55) + a deeper ember band (r 55..88),
-  // both 25 units behind the ring plane
+  // eye disc: a warm ember glow, calmer and brighter than the wall but
+  // NEVER sun-yellow — the rev1 pale-yellow disc read as a giant sun and
+  // swallowed the gold ring starburst. Centre (r 0..55) + a deeper ember
+  // band (r 55..88), both 25 units behind the ring plane
   let prev = null;
   for (let i = 0; i <= 20; i++) {
     const a = (i / 20) * Math.PI * 2;
     const p = P(a, 55, 25);
-    if (prev) tri(P(0, 0, 25), prev, p, [1.0, 0.66, 0.28]);
+    if (prev) tri(P(0, 0, 25), prev, p, [0.80, 0.38, 0.14]);
     prev = p;
   }
   for (let i = 0; i < 20; i++) {
     const a0 = (i / 20) * Math.PI * 2, a1 = ((i + 1) / 20) * Math.PI * 2;
-    tri(P(a0, 55, 25), P(a1, 55, 25), P(a1, 88, 25), [0.96, 0.48, 0.15]);
-    tri(P(a0, 55, 25), P(a1, 88, 25), P(a0, 88, 25), [0.96, 0.48, 0.15]);
+    tri(P(a0, 55, 25), P(a1, 55, 25), P(a1, 88, 25), [0.66, 0.28, 0.10]);
+    tri(P(a0, 55, 25), P(a1, 88, 25), P(a0, 88, 25), [0.66, 0.28, 0.10]);
   }
-  // ring wall: 28 dark wedges + ember inner rim + ragged outer spikes
+  // ring wall: 28 dark wedges + ember inner rim + ragged outer spikes.
+  // Rev2: wedge shades kept CLOSE (no fan/sunburst striping) and spikes
+  // short, so the wall reads as cloud, not machined rays
   const segs = 28;
   for (let i = 0; i < segs; i++) {
     const a0 = (i / segs) * Math.PI * 2, a1 = ((i + 1) / segs) * Math.PI * 2;
     const am = (a0 + a1) / 2;
-    const dark = i % 2 ? [0.10, 0.11, 0.24] : [0.15, 0.14, 0.30];
+    const dark = i % 2 ? [0.10, 0.11, 0.24] : [0.13, 0.12, 0.26];
     const o0 = P(a0, 215, backOf(a0)), o1 = P(a1, 215, backOf(a1));
     const i0 = P(a0, 88, backOf(a0)), i1 = P(a1, 88, backOf(a1));
     tri(o0, i0, i1, dark);
     tri(o0, i1, o1, dark);
-    // ember inner rim: a bright strip just inside the wall, pulled 6
-    // units toward the camera so it sits proud of the dark wedges
+    // ember inner rim: a THICK bright strip just inside the wall, pulled
+    // 6 units toward the camera so it sits proud of the dark wedges
     const r0 = P(a0, 88, backOf(a0) - 6), r1 = P(a1, 88, backOf(a1) - 6);
-    const r2 = P(a1, 102, backOf(a1) - 6), r3 = P(a0, 102, backOf(a0) - 6);
-    tri(r0, r1, r2, [1.0, 0.50, 0.12]);
-    tri(r0, r2, r3, [1.0, 0.50, 0.12]);
+    const r2 = P(a1, 106, backOf(a1) - 6), r3 = P(a0, 106, backOf(a0) - 6);
+    tri(r0, r1, r2, [1.0, 0.55, 0.15]);
+    tri(r0, r2, r3, [1.0, 0.55, 0.15]);
     // ragged outer peak so the silhouette is cloud, not a machined ring
-    const pk = P(am, 215 + (i % 3 === 0 ? 34 : 14), backOf(am));
+    const pk = P(am, 215 + (i % 3 === 0 ? 22 : 8), backOf(am));
     tri(o0, o1, pk, dark);
   }
   return mesh;
