@@ -659,17 +659,15 @@ function buildBoltMesh(bolt) {
 // the plane while CHAIN x3, built fresh each frame from the plane's pose.
 // It trails BEHIND the plane (never over the HUD or the ring ahead) and
 // fades from bright gold at the tail to deep ember at the end.
-// 6.4 rev2: SHORT (6-13 units) — the first version ran to 44 units, past
-// the chase camera (26 behind the plane); the triangles crossing the
-// camera plane smeared a giant yellow-white slab across the bottom of the
-// frame. A 6-13 trail stays in front of the camera and reads as a bright
-// streak dropping from the tail.
+// 6.4 rev3: NARROW (0.9 -> 0.15 units) — the rev2 widths (3.2 -> 0.7)
+// rendered ~100 px wide at the camera-near end (1 unit ≈ 30-45 px at
+// w 14-21) and read as a pale yellow block under the tail, not a streak.
 function chainTrailMesh(plane) {
   const mesh = { positions: [], colors: [] };
   const fx = Math.sin(plane.heading), fz = Math.cos(plane.heading);
   const rx = fz, rz = -fx; // right vector
   const tri = (a, b, d, cc) => { mesh.positions.push(...a, ...b, ...d); for (let i = 0; i < 3; i++) mesh.colors.push(...cc); };
-  const segs = [[6, 3.2, [1.0, 0.75, 0.3]], [9, 2.4, [1.0, 0.55, 0.12]], [11, 1.6, [0.9, 0.35, 0.08]], [13, 0.7, [0.6, 0.2, 0.05]]];
+  const segs = [[6, 0.9, [1.0, 0.75, 0.3]], [9, 0.6, [1.0, 0.55, 0.12]], [11, 0.4, [0.9, 0.35, 0.08]], [13, 0.15, [0.6, 0.2, 0.05]]];
   for (let i = 0; i < segs.length - 1; i++) {
     const [d0, w0, c0] = segs[i], [d1, w1] = segs[i + 1];
     const a = [plane.pos[0] - fx * d0 + rx * w0, plane.pos[1], plane.pos[2] - fz * d0 + rz * w0];
@@ -696,13 +694,15 @@ function chainTrailMesh(plane) {
 // 6.4: phosphorescent teal wake under the plane at low altitude — a flat
 // glowing ribbon on the sea trailing behind the plane, widening as it
 // falls behind. Only below 60 m, so it never appears in the high shots.
+// rev3: NARROWER (2 -> 9) and dimmer — the first version rendered as a
+// giant cyan highway across the bottom of the trap shot.
 function planeWakeMesh(plane) {
   const mesh = { positions: [], colors: [] };
   const fx = Math.sin(plane.heading), fz = Math.cos(plane.heading);
   const rx = fz, rz = -fx;
   const tri = (a, b, d, cc) => { mesh.positions.push(...a, ...b, ...d); for (let i = 0; i < 3; i++) mesh.colors.push(...cc); };
   const y = 0.8;
-  const pts = [[0, 4, [0.2, 1.0, 0.9]], [25, 7, [0.16, 0.95, 0.85]], [55, 12, [0.12, 0.85, 0.78]], [90, 18, [0.08, 0.7, 0.65]]];
+  const pts = [[0, 2, [0.14, 0.8, 0.72]], [25, 3.5, [0.12, 0.75, 0.68]], [55, 6, [0.10, 0.65, 0.6]], [90, 9, [0.07, 0.55, 0.52]]];
   for (let i = 0; i < pts.length - 1; i++) {
     const [d0, w0, c0] = pts[i], [d1, w1] = pts[i + 1];
     const a = [plane.pos[0] - fx * d0 + rx * w0, y, plane.pos[2] - fz * d0 + rz * w0];
@@ -776,9 +776,12 @@ function frame(now) {
     ];
     // 6.4: ember chain-glow trail behind the plane at CHAIN x3 (all flying
     // shots stage chain x3) + phosphorescent wake under the plane at low
-    // altitude — both built from the plane pose, behind the plane only
+    // altitude — both built from the plane pose, behind the plane only.
+    // rev3: NO plane wake in the staged trap shot — the plane is over the
+    // deck there, and the wake rendered as a giant cyan highway; the wake
+    // is a low-over-sea gameplay effect only.
     if (gs.chain >= 3 && gs.state === 'play') meshes.push({ mesh: chainTrailMesh(plane), bright: 1.4 });
-    if (plane.pos[1] < 60 && gs.state === 'play') meshes.push({ mesh: planeWakeMesh(plane), bright: 1.3 });
+    if (plane.pos[1] < 60 && gs.state === 'play' && !game.trapStaged) meshes.push({ mesh: planeWakeMesh(plane), bright: 1.3 });
     if (renderer) renderer.render({ plane, t: gs.time, meshes, flash: weather.flash, shake, tint: game.skyTint });
     drawHUD(hudCtx, 1280, 800, gs, plane, flolsS, objectiveFor());
     if (gs.state === 'crashed') {
