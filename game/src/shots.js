@@ -18,8 +18,10 @@ export function applyShot(game, params) {
     plane.speed = 165; plane.throttle = 0.7; plane.fuel = 78;
     game.carrierT = 0;
     game.playStaged = true;
-    game.skyTint = { top: [0.06, 0.28, 0.36], mid: [0.55, 0.30, 0.40], sun: [1.0, 0.52, 0.10] };
-    game.seaTint = { deep: [0.03, 0.26, 0.24], light: [0.10, 0.44, 0.38] };
+    // 6.3: ember-dominant dusk — deep ember zenith, ember mid, bright sun;
+    // sea dark teal with a bright glowing-teal light tone
+    game.skyTint = { top: [0.42, 0.20, 0.10], mid: [0.95, 0.45, 0.12], sun: [1.0, 0.62, 0.15] };
+    game.seaTint = { deep: [0.02, 0.24, 0.26], light: [0.10, 0.58, 0.55] };
     game.cloudMode = 'warm';
   } else if (shot === 'trap') {
     gs.state = 'play';
@@ -44,8 +46,10 @@ export function applyShot(game, params) {
     plane.speed = 190; plane.throttle = 0.85; plane.fuel = 64; plane.afterburner = true;
     game.weather.flash = 0.9;
     game.stormStaged = true;
-    game.skyTint = { top: [0.02, 0.08, 0.18], mid: [0.16, 0.14, 0.32], sun: [0.8, 0.32, 0.10] };
-    game.seaTint = { deep: [0.02, 0.10, 0.18], light: [0.05, 0.20, 0.28] };
+    // 6.3: storm dusk — ember-smoke zenith, ember mid band, bright sun low;
+    // sea near-black teal so the glowing crests + ember rims carry the shot
+    game.skyTint = { top: [0.18, 0.08, 0.10], mid: [0.72, 0.28, 0.10], sun: [1.0, 0.50, 0.10] };
+    game.seaTint = { deep: [0.02, 0.14, 0.20], light: [0.06, 0.42, 0.42] };
     game.cloudMode = 'storm';
   }
   game.shotMode = shot;

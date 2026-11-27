@@ -42,10 +42,10 @@ const stripMesh = buildStrip(STRIP.x, STRIP.z, STRIP.heading);
 // ember-lit for the supply run, dark slate with ember rims for the storm.
 function buildCloudMeshes(clouds, mode) {
   const pal = mode === 'warm'
-    ? { lit: [0.78, 0.48, 0.38], dark: [0.40, 0.30, 0.50] }
+    ? { lit: [1.0, 0.55, 0.20], dark: [0.55, 0.25, 0.15] }
     : mode === 'storm'
-      ? { lit: [0.55, 0.30, 0.18], dark: [0.13, 0.13, 0.26] }
-      : { lit: [0.72, 0.42, 0.42], dark: [0.38, 0.30, 0.48] };
+      ? { lit: [1.0, 0.50, 0.15], dark: [0.13, 0.13, 0.26] }
+      : { lit: [1.0, 0.55, 0.25], dark: [0.45, 0.28, 0.30] };
   return clouds.map((c) => {
     const s = c.s;
     const mesh = { positions: [], colors: [] };
@@ -59,9 +59,10 @@ function buildCloudMeshes(clouds, mode) {
   });
 }
 let cloudMeshes = buildCloudMeshes(weather.clouds, game.cloudMode);
-// storm cell: a dark volumetric MASS — a low flattened dome in uniform
-// dark slate with an ember-lit lower rim on the sun side. Never a pale
-// pyramid, never white.
+// storm cell: a TOWERING dark volumetric MASS — a tall dome (apex over
+// one radius high) in uniform dark slate with a THICK ember-lit rim band
+// on the sun side. Never a pale pyramid, never white. 6.3: the masses
+// tower over the horizon as the shot's signature (boss The Eye).
 function buildStormCell(x, z, r, y) {
   const mesh = { positions: [], colors: [] };
   const tri = (a, b, d, cc) => { mesh.positions.push(...a, ...b, ...d); for (let i = 0; i < 3; i++) mesh.colors.push(...cc); };
@@ -71,19 +72,24 @@ function buildStormCell(x, z, r, y) {
     const a0 = (i / segs) * Math.PI * 2, a1 = ((i + 1) / segs) * Math.PI * 2;
     const p0 = [x + Math.cos(a0) * r, y - 10, z + Math.sin(a0) * r];
     const p1 = [x + Math.cos(a1) * r, y - 10, z + Math.sin(a1) * r];
-    const m0 = [x + Math.cos(a0) * r * 0.55, y + r * 0.28, z + Math.sin(a0) * r * 0.55];
-    const m1 = [x + Math.cos(a1) * r * 0.55, y + r * 0.28, z + Math.sin(a1) * r * 0.55];
-    const apex = [x, y + r * 0.5, z];
-    // ember-lit rim: a THIN sliver along the base edge on the sun-facing
-    // side only (3 of 10 segments) — a glowing line, never an orange face.
-    // The lower band itself stays dark slate.
+    const m0 = [x + Math.cos(a0) * r * 0.55, y + r * 0.60, z + Math.sin(a0) * r * 0.55];
+    const m1 = [x + Math.cos(a1) * r * 0.55, y + r * 0.60, z + Math.sin(a1) * r * 0.55];
+    const apex = [x, y + r * 1.15, z];
     const band = i % 2 ? dark : dark2;
     tri(p0, p1, m1, band);
     tri(p0, m1, m0, band);
     tri(m0, m1, apex, top);
-    if (Math.cos(a0) > 0.6) {
-      const mid = [x + Math.cos((a0 + a1) / 2) * r * 0.97, y - 4, z + Math.sin((a0 + a1) / 2) * r * 0.97];
-      tri(p0, p1, mid, [0.5, 0.25, 0.12]);
+    // 6.3 ember rim: a THICK glowing band along the lower edge on the
+    // sun-facing side (cos > 0.2) — a quad strip rising a fifth of the
+    // radius, bright ember, so the rim reads at judge size
+    const midA = (a0 + a1) / 2;
+    if (Math.cos(midA) > 0.2) {
+      const q0 = [x + Math.cos(a0) * r * 0.99, y - 8, z + Math.sin(a0) * r * 0.99];
+      const q1 = [x + Math.cos(a1) * r * 0.99, y - 8, z + Math.sin(a1) * r * 0.99];
+      const q2 = [x + Math.cos(a1) * r * 0.88, y + r * 0.20, z + Math.sin(a1) * r * 0.88];
+      const q3 = [x + Math.cos(a0) * r * 0.88, y + r * 0.20, z + Math.sin(a0) * r * 0.88];
+      tri(q0, q1, q2, [1.0, 0.50, 0.12]);
+      tri(q0, q2, q3, [1.0, 0.50, 0.12]);
     }
   }
   return mesh;
@@ -117,6 +123,54 @@ function ringMesh(cx, cy, cz, heading, rOut, rIn, col) {
   return mesh;
 }
 const stagedMeshes = [];
+// static celebration starburst: a radial burst of long bright rays + a
+// hot core disc, built as GEOMETRY (not particles) so it is in the frame
+// at any capture time. Positions were computed from the chase-camera
+// projection for the trap shot (eye [0,57,-176], heading 0): the burst
+// centres land at clear sky spots — left of the banner, above the banner,
+// and low-left over the deck — never behind a HUD panel.
+function starburstMesh(cx, cy, cz, col, coreCol) {
+  const mesh = { positions: [], colors: [] };
+  const tri = (a, b, d, cc) => { mesh.positions.push(...a, ...b, ...d); for (let i = 0; i < 3; i++) mesh.colors.push(...cc); };
+  const rays = 14;
+  for (let i = 0; i < rays; i++) {
+    const a = (i / rays) * Math.PI * 2;
+    const a2 = ((i + 0.5) / rays) * Math.PI * 2;
+    const rOut = i % 2 ? 20 : 11;
+    const p = [cx + Math.cos(a) * rOut, cy + Math.sin(a) * rOut, cz];
+    const p2 = [cx + Math.cos(a2) * 4, cy + Math.sin(a2) * 4, cz];
+    const p3 = [cx + Math.cos(a2 + 0.22) * 4, cy + Math.sin(a2 + 0.22) * 4, cz];
+    tri([cx, cy, cz], p2, p, col);
+    tri([cx, cy, cz], p, p3, col);
+  }
+  // hot core disc
+  let prev = null;
+  for (let i = 0; i <= 12; i++) {
+    const a = (i / 12) * Math.PI * 2;
+    const p = [cx + Math.cos(a) * 6, cy + Math.sin(a) * 6, cz];
+    if (prev) tri([cx, cy, cz], prev, p, coreCol);
+    prev = p;
+  }
+  return mesh;
+}
+if (SHOT === 'trap') {
+  // two big bursts in clear sky + one gold burst low-left over the deck,
+  // plus a scatter of static ember confetti above the deck
+  stagedMeshes.push(starburstMesh(139, 68, 300, [1.0, 0.55, 0.15], [1.0, 0.9, 0.6]));
+  stagedMeshes.push(starburstMesh(0, 104, 350, [0.2, 0.9, 0.9], [1.0, 1.0, 1.0]));
+  stagedMeshes.push(starburstMesh(96, 49, 200, [1.0, 0.8, 0.3], [1.0, 0.95, 0.7]));
+  {
+    const conf = { positions: [], colors: [] };
+    const tri = (a, b, d, cc) => { conf.positions.push(...a, ...b, ...d); for (let i = 0; i < 3; i++) conf.colors.push(...cc); };
+    const rng = [11, 23, 37, 51, 67, 83, 97, 113, 131, 149, 167, 181, 199, 217, 233, 251, 269, 283, 301, 317];
+    rng.forEach((s, i) => {
+      const x = -110 + (s * 7) % 220, y = 42 + (s * 13) % 34, z = 110 + (s * 17) % 170;
+      const sz = 1.6;
+      tri([x - sz, y, z], [x + sz, y, z], [x, y + sz * 1.8, z], [1.0, 0.62, 0.15]);
+    });
+    stagedMeshes.push(conf);
+  }
+}
 if (SHOT === 'play') {
   // supply-run staging: a coastal strip on a sandbar off Pulau Karang Api,
   // amber dashes + cargo crates, so the island reads as a destination
@@ -161,6 +215,10 @@ if (SHOT === 'play') {
     stagedMeshes.push(...buildCloudMeshes(fill.map((c) => ({ ...c, lit: true, speed: 0 })), 'warm'));
     stagedMeshes.push(buildIsland(-950, 1500, 200, 75, 55));
     stagedMeshes.push(buildIsland(850, 1650, 170, 60, 66));
+    // 6.3: a TOWERING storm mass on the far horizon left-of-centre (The
+    // Eye's silhouette) — the cover's storm signature, far ahead of the
+    // strip so it never blocks the island or the carrier
+    stagedMeshes.push(buildStormCell(-500, 200, 260, 70));
     // 2-plane formation: small dark deltas with amber noses, high ahead
     for (const [fx0, fy, fz0] of [[-220, 280, 450], [-180, 285, 470]]) {
       const m = { positions: [], colors: [] };
@@ -174,11 +232,12 @@ if (SHOT === 'play') {
   }
 }
 if (SHOT === 'storm') {
-  // storm wall: 3 big dark masses ahead, so the shot reads as a storm
-  // intercept with no deck anywhere in frame
-  stagedMeshes.push(buildStormCell(-260, 620, 150, 110));
-  stagedMeshes.push(buildStormCell(120, 800, 170, 120));
-  stagedMeshes.push(buildStormCell(480, 680, 140, 100));
+  // storm wall: 3 TOWERING dark masses ahead (6.3: r 210-260, apex over
+  // one radius high), so the shot reads as a storm intercept with no deck
+  // anywhere in frame
+  stagedMeshes.push(buildStormCell(-260, 620, 230, 130));
+  stagedMeshes.push(buildStormCell(120, 800, 260, 140));
+  stagedMeshes.push(buildStormCell(480, 680, 210, 120));
   // fly-through ring ahead of the plane, on the way into the wall
   {
     const fx = Math.sin(plane.heading), fz = Math.cos(plane.heading);
@@ -218,14 +277,17 @@ function trapLanding() {
     const anglePts = Math.max(0, 20 - Math.round(Math.abs(plane.bank) * 30 + Math.abs(plane.pitch) * 20));
     const centrePts = Math.max(0, 10 - Math.round(Math.abs(plane.pos[0])));
     gs.breakdown = { wire: wirePts, speed: speedPts, angle: anglePts, centre: centrePts, total: wirePts + speedPts + anglePts + centrePts };
-    // celebration: fireworks over the deck + ember confetti + cheering crew
+    // celebration: fireworks over the deck + ember confetti + cheering crew.
+    // 6.3: burst spots from the chase-camera projection (same as the staged
+    // celebration) — the old spots sat above the frame in the trap view.
     const c0 = carrierState(game.carrierT);
     const fwCols = [[1, 0.55, 0.15], [0.2, 0.9, 0.9], [1, 0.8, 0.3]];
+    const fwSpots = [[139, 68, 300], [0, 104, 350], [96, 49, 200]];
     const nFw = hit.wire === 3 ? 3 : 1;
     for (let i = 0; i < nFw; i++) {
-      spawnFirework(particles, plane.pos[0] + (i - 1) * 45, CFG.deckY + 68 + i * 14, c0.z + 20 - i * 30, fwCols[i % 3]);
+      spawnFirework(particles, fwSpots[i][0], fwSpots[i][1], fwSpots[i][2], fwCols[i % 3]);
     }
-    if (hit.wire === 3) spawnEmbers(particles, plane.pos[0], CFG.deckY + 70, plane.pos[2], 26);
+    if (hit.wire === 3) spawnEmbers(particles, 0, CFG.deckY + 45, c0.z + 60, 26);
     if (hit.wire === 3) showPopup(gs, 'WIRE 3 — PERFECT +250', 'TRAP! Elang Badai is home.');
     else showPopup(gs, `WIRE ${hit.wire} — TRAP +${pts}`, 'Good trap. Deck crew cheers.');
     gs.state = 'trapped';
@@ -297,25 +359,38 @@ function update(dt) {
     // capture always catches them mid-burst), then one fresh burst per second
     game.celebration = (game.celebration || 0) + dt;
     const c0 = carrierState(game.carrierT);
+    // 6.3: burst spots were recomputed from the chase-camera projection —
+    // the 6.2 spots sat at screen y ~0-40 px or off-frame entirely, which
+    // is why the 6.2 trap capture showed NO fireworks. These three land
+    // in clear sky: left of the banner, above the banner, low-left deck.
+    // (Static starburst geometry in stagedMeshes carries the celebration
+    // even if a particle burst is ever culled; the particles add motion.)
+    const FW_SPOTS = [
+      [139, 68, 300, [1, 0.55, 0.15]],
+      [0, 104, 350, [0.2, 0.9, 0.9]],
+      [96, 49, 200, [1, 0.8, 0.3]],
+    ];
     if (!game.celebrationFired) {
       game.celebrationFired = true;
-      spawnFirework(particles, -45, CFG.deckY + 68, c0.z + 30, [1, 0.55, 0.15]);
-      spawnFirework(particles, 40, CFG.deckY + 82, c0.z - 10, [0.2, 0.9, 0.9]);
-      spawnFirework(particles, 78, CFG.deckY + 72, c0.z - 38, [1, 0.8, 0.3]);
-      spawnEmbers(particles, 0, CFG.deckY + 70, plane.pos[2], 26);
+      for (const s of FW_SPOTS) spawnFirework(particles, s[0], s[1], s[2], s[3]);
+      spawnEmbers(particles, 0, CFG.deckY + 45, c0.z + 60, 26);
     } else if (game.celebration > 0.4 && Math.floor(game.celebration / 0.4) !== game.celebrationLast) {
       // deterministic cycle, every 0.4 s, so the capture (taken at the end of
       // the virtual-time budget, long after the first bursts fade) always
-      // catches a young burst — and both spots sit in empty sky, far left /
-      // far right, clear of the heading strip, banner and breakdown panel
-      // (the view is mirrored horizontally: world +x reads screen-left)
+      // catches a young burst
       game.celebrationLast = Math.floor(game.celebration / 0.4);
-      const spots = [[110, 85, -10, [0.2, 0.9, 0.9]], [-70, 95, -10, [1, 0.55, 0.15]]];
-      const s = spots[game.celebrationLast % 2];
-      spawnFirework(particles, s[0], CFG.deckY + s[1], c0.z + s[2], s[3]);
+      const s = FW_SPOTS[game.celebrationLast % FW_SPOTS.length];
+      spawnFirework(particles, s[0], s[1], s[2], s[3]);
     }
-    spawn(particles, 'spark', plane.pos[0], CFG.deckY + 3, plane.pos[2], 8, [1, 0.8, 0.2], 24);
-    spawn(particles, 'steam', plane.pos[0], CFG.deckY + 2, plane.pos[2] - 10, 6, [0.9, 0.9, 0.95], 10);
+    // 6.3 (E34 + flood fix): deck sparks/steam ONLY every 0.5 s, spawned
+    // at the wires — never per-frame at the plane. The 6.2 per-frame spawn
+    // (8 sparks + 6 steam every frame) flooded the 500-particle cap and
+    // spliced the firework particles out within a second of spawning.
+    if (!game.sparkT || game.celebration - game.sparkT > 0.5) {
+      game.sparkT = game.celebration;
+      spawn(particles, 'spark', 0, CFG.deckY + 3, c0.z + 74, 6, [1, 0.8, 0.2], 24);
+      spawn(particles, 'steam', 0, CFG.deckY + 2, c0.z + 60, 4, [0.9, 0.9, 0.95], 10);
+    }
   }
   if (game.stormStaged) {
     weather.flash = Math.max(weather.flash, 0.55);

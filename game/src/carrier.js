@@ -26,6 +26,12 @@ export function buildCarrierMesh(t) {
   const L = CFG.deckLength, W = CFG.deckWidth, y = c.y, z0 = c.z - L / 2, z1 = c.z + L / 2;
   // hull
   box(mesh, -W / 2 - 4, y - 16, z0 - 6, W / 2 + 4, y, z1 + 6, [0.28, 0.30, 0.35]);
+  // 6.3 phosphorescent wake: a glowing teal fan trailing behind the stern
+  // at sea level, widening as it falls behind — the sea lights up for her
+  tri(mesh, [-6, 0.6, z0 - 6], [6, 0.6, z0 - 6], [26, 0.6, z0 - 150], [0.10, 0.75, 0.70]);
+  tri(mesh, [-6, 0.6, z0 - 6], [26, 0.6, z0 - 150], [-26, 0.6, z0 - 150], [0.10, 0.75, 0.70]);
+  tri(mesh, [-3, 0.7, z0 - 6], [3, 0.7, z0 - 6], [12, 0.7, z0 - 110], [0.16, 0.95, 0.85]);
+  tri(mesh, [-3, 0.7, z0 - 6], [12, 0.7, z0 - 110], [-12, 0.7, z0 - 110], [0.16, 0.95, 0.85]);
   // deck slab — bright steel grey so it reads in screenshots
   box(mesh, -W / 2, y, z0, W / 2, y + 2, z1, PALETTE.deckGrey);
   // landing strip (angled, amber centre line)
@@ -108,7 +114,8 @@ export function buildCarrierMesh(t) {
     });
   }
   // 2 parked aircraft on the starboard deck, folded wings, amber tips —
-  // the deck is a working airfield, not an empty slab
+  // the deck is a working airfield, not an empty slab. 6.3: ember livery,
+  // matching the flying plane
   const parkedPlane = (x, z, noseDir, col) => {
     const zA = Math.min(z - 7 * noseDir, z + 7 * noseDir), zB = Math.max(z - 7 * noseDir, z + 7 * noseDir);
     box(mesh, x - 1.6, y + 2, zA, x + 1.6, y + 4.4, zB, col);
@@ -119,8 +126,27 @@ export function buildCarrierMesh(t) {
     const czA = noseDir > 0 ? zA : zB - 3;
     box(mesh, x - 0.9, y + 4.4, czA, x + 0.9, y + 5.4, czA + 3, [0.05, 0.08, 0.15]);
   };
-  parkedPlane(17, c.z - 62, 1, [0.62, 0.65, 0.70]);
-  parkedPlane(17, c.z + 100, -1, [0.55, 0.58, 0.64]);
+  parkedPlane(17, c.z - 62, 1, [1.0, 0.45, 0.08]);
+  parkedPlane(17, c.z + 120, -1, [0.95, 0.42, 0.08]); // moved aft of the bow letters
+  // 6.3 best-effort: "HALILINTAR" ACROSS the deck width near the bow —
+  // one big word spanning x -28..+28, letters 5.6 wide and 20 deep (deep
+  // in z, the foreshortened direction, so they stand a chance of reading
+  // from the chase view). The fore-aft letters above stay as the fallback.
+  {
+    const cw = 56 / 10 / 3, cd = 20 / 5, ch = 1.2;
+    const word = 'HALILINTAR';
+    const x0 = -28, z0 = c.z + 88;
+    [...word].forEach((ch, li) => {
+      const segs = LETTERS[ch];
+      if (!segs) return;
+      const lx = x0 + li * (56 / 10);
+      for (const [col, row] of segs) {
+        const x = lx + col * cw;
+        const z = z0 + row * cd;
+        box(mesh, x, y + 2.2, z, x + cw * 0.92, y + 2.2 + ch, z + cd * 0.92, [1.0, 0.75, 0.20]);
+      }
+    });
+  }
   // fuel truck parked by the island: white tank, red cab, red stripe
   box(mesh, 11, y + 2, c.z + 24, 15, y + 5.5, c.z + 34, [0.88, 0.88, 0.90]);
   box(mesh, 11, y + 4.4, c.z + 24, 15, y + 5.0, c.z + 34, [0.85, 0.2, 0.15]);

@@ -61,7 +61,7 @@ export function makeRenderer(canvas) {
     const fx = Math.sin(heading), fz = Math.cos(heading);
     const cx = eye[0] + fx * 1400, cz = eye[2] + fz * 1400;
     const rx = fz, rz = -fx; // right vector, perpendicular to forward
-    const y0 = -60, y1 = 320;
+    const y0 = -60, y1 = 420;
     const x0 = cx - rx * 1600, z0 = cz - rz * 1600;
     const x1 = cx + rx * 1600, z1 = cz + rz * 1600;
     const quad = (a, b, c, d, ca, cb) => {
@@ -70,22 +70,24 @@ export function makeRenderer(canvas) {
     };
     quad([x0, y1, z0], [x1, y1, z1], [x1, y0 + 60, z1], [x0, y0 + 60, z0], top, mid);
     quad([x0, y0 + 60, z0], [x1, y0 + 60, z1], [x1, y0, z1], [x0, y0, z0], mid, sun);
-    // low ember sun: a 16-gon fan riding the horizon band, offset right of
-    // centre so it never sits behind the plane or the HUD. A fan (not a
-    // quad) reads as a round disc; it is the light source that silhouettes
-    // the whole scene and anchors the ember-dusk identity.
+    // low ember sun, 6.3: BIG — a huge dusk disc + a wide faint halo fan
+    // around it, so the ember sky has one unmistakable light source.
+    // Offset right of centre so it never sits behind the plane or the HUD.
     const sunCx = cx + rx * 420, sunCy = y0 + 52, sunCz = cz + rz * 420;
-    const sunR = 88, sunCol = [1.0, 0.52, 0.12];
-    let prev = null;
-    for (let i = 0; i <= 16; i++) {
-      const a = (i / 16) * Math.PI * 2;
-      const p = [sunCx + rx * Math.cos(a) * sunR, sunCy + Math.sin(a) * sunR, sunCz + rz * Math.cos(a) * sunR];
-      if (prev) {
-        mesh.positions.push(sunCx, sunCy, sunCz, ...prev, ...p);
-        for (let k = 0; k < 3; k++) mesh.colors.push(...sunCol);
+    const sunFan = (r, col) => {
+      let prev = null;
+      for (let i = 0; i <= 16; i++) {
+        const a = (i / 16) * Math.PI * 2;
+        const p = [sunCx + rx * Math.cos(a) * r, sunCy + Math.sin(a) * r, sunCz + rz * Math.cos(a) * r];
+        if (prev) {
+          mesh.positions.push(sunCx, sunCy, sunCz, ...prev, ...p);
+          for (let k = 0; k < 3; k++) mesh.colors.push(...col);
+        }
+        prev = p;
       }
-      prev = p;
-    }
+    };
+    sunFan(230, [0.85, 0.38, 0.12]);
+    sunFan(150, [1.0, 0.52, 0.12]);
     // (no square sun disc — the orange horizon band carries the sunset; a quad sun reads as a box)
     gl.disable(gl.DEPTH_TEST);
     drawMesh(mesh, mvp, 1.15);
@@ -106,8 +108,16 @@ export function makeRenderer(canvas) {
       quad(B, F, G, C, col); quad(D, C, G, H, col);
     };
     const c = plane.def.color;
-    const top = [0.60, 0.63, 0.68];   // fuselage top, sunlit grey — never blown-out white
-    const belly = [0.22, 0.25, 0.30];  // fuselage belly, shadowed
+    // 6.3 livery, INVERTED from 6.2: the fuselage is EMBER-orange (the
+    // plane is "the ember plane" at 250 px), the wings are WHITE, the
+    // canopy stays dark glass. The old grey fuselage + amber spine is gone.
+    const emberFus = PALETTE.ember;        // fuselage sides
+    const emberTop = [1.0, 0.58, 0.16];    // fuselage top, sunlit ember
+    const emberBelly = [0.42, 0.16, 0.05]; // fuselage belly, shadowed ember
+    const whiteWing = [0.95, 0.95, 0.92];  // wing tops
+    const wingUnder = [0.62, 0.62, 0.64];  // wing undersides
+    const top = emberTop;
+    const belly = emberBelly;
     const canopyCol = [0.05, 0.08, 0.15]; // dark canopy glass
     // Fuselage: a faceted BODY with real volume — 5 stations, nose at +z.
     // Top faces light, side faces squadron grey, belly dark: from the chase
@@ -137,8 +147,8 @@ export function makeRenderer(canvas) {
       const topCol = i === 0 ? PALETTE.ember : top; // ember nose cone
       quad(A.T, B.T, B.UR, A.UR, topCol);
       quad(A.T, A.UL, B.UL, B.T, topCol);
-      quad(A.UL, A.LL, B.LL, B.UL, c);
-      quad(A.UR, B.UR, B.LR, A.LR, c);
+      quad(A.UL, A.LL, B.LL, B.UL, emberFus);
+      quad(A.UR, B.UR, B.LR, A.LR, emberFus);
       quad(A.LL, A.B, B.B, B.LL, belly);
       quad(A.B, A.LR, B.LR, B.B, belly);
     }
@@ -152,11 +162,11 @@ export function makeRenderer(canvas) {
     // intakes: dark mouths flanking the fuselage just behind the nose
     boxAt(1.02, -0.35, 2.2, 1.55, 0.45, 3.8, [0.10, 0.11, 0.14]);
     boxAt(-1.55, -0.35, 2.2, -1.02, 0.45, 3.8, [0.10, 0.11, 0.14]);
-    // main wings — wide, with real thickness (dark underside) + amber tips
-    quad([-1, 0, 1], [-8.5, -0.3, -3.5], [-8.5, -0.3, -1.5], [-1, 0, -1.5], c);
-    quad([1, 0, 1], [8.5, -0.3, -1.5], [8.5, -0.3, -3.5], [1, 0, -1.5], c);
-    quad([-1, -0.32, 1], [-1, -0.32, -1.5], [-8.5, -0.62, -1.5], [-8.5, -0.62, -3.5], [0.38, 0.40, 0.44]);
-    quad([1, -0.32, 1], [8.5, -0.62, -3.5], [8.5, -0.62, -1.5], [1, -0.32, -1.5], [0.38, 0.40, 0.44]);
+    // main wings — WHITE tops with real thickness (grey underside) + amber tips
+    quad([-1, 0, 1], [-8.5, -0.3, -3.5], [-8.5, -0.3, -1.5], [-1, 0, -1.5], whiteWing);
+    quad([1, 0, 1], [8.5, -0.3, -1.5], [8.5, -0.3, -3.5], [1, 0, -1.5], whiteWing);
+    quad([-1, -0.32, 1], [-1, -0.32, -1.5], [-8.5, -0.62, -1.5], [-8.5, -0.62, -3.5], wingUnder);
+    quad([1, -0.32, 1], [8.5, -0.62, -3.5], [8.5, -0.62, -1.5], [1, -0.32, -1.5], wingUnder);
     tri([-8.5, -0.3, -3.5], [-9.5, -0.3, -3], [-9.5, -0.3, -1.8], PALETTE.ember);
     tri([8.5, -0.3, -3.5], [9.5, -0.3, -1.8], [9.5, -0.3, -3], PALETTE.ember);
     // ember wingtip bands: full-chord amber on the outer wing, so the
@@ -184,10 +194,10 @@ export function makeRenderer(canvas) {
     };
     roundel(-5.2, -2.2, 1.15);
     roundel(5.2, -2.2, 1.15);
-    // tail fins
-    quad([0, 0.4, -6], [-2.6, 0.2, -8.5], [-2.6, 0.2, -6.5], [0, 0.4, -6.5], c);
-    quad([0, 0.4, -6], [2.6, 0.2, -6.5], [2.6, 0.2, -8.5], [0, 0.4, -6.5], c);
-    tri([0, 0.3, -6], [0, 2.6, -8], [0, 2.6, -6], c);
+    // tail fins — white, matching the wings
+    quad([0, 0.4, -6], [-2.6, 0.2, -8.5], [-2.6, 0.2, -6.5], [0, 0.4, -6.5], whiteWing);
+    quad([0, 0.4, -6], [2.6, 0.2, -6.5], [2.6, 0.2, -8.5], [0, 0.4, -6.5], whiteWing);
+    tri([0, 0.3, -6], [0, 2.6, -8], [0, 2.6, -6], whiteWing);
     // roundel on both faces of the vertical fin
     const finRoundel = (sx) => {
       const fan = (rr, col, xOff) => {
@@ -206,12 +216,13 @@ export function makeRenderer(canvas) {
     };
     finRoundel(1);
     finRoundel(-1);
-    // Elang Badai livery, readable from directly behind: amber spine stripe
-    // down the fuselage top, following the top surface station by station
+    // Elang Badai livery, readable from directly behind: a WHITE spine
+    // stripe down the ember fuselage top — the 6.3 inversion of the old
+    // grey fuselage + amber spine
     for (let i = 1; i < st.length - 1; i++) {
       const zA = st[i][0], yA = st[i][2] + 0.04;
       const zB = st[i + 1][0], yB = st[i + 1][2] + 0.04;
-      quad([-0.5, yA, zA], [0.5, yA, zA], [0.5, yB, zB], [-0.5, yB, zB], PALETTE.amber);
+      quad([-0.5, yA, zA], [0.5, yA, zA], [0.5, yB, zB], [-0.5, yB, zB], [0.95, 0.95, 0.92]);
     }
     // deep-teal fuselage band across the spine just behind the canopy —
     // the teal half of the ember-dusk identity, worn by every squadron plane
@@ -262,7 +273,11 @@ export function makeRenderer(canvas) {
     const { plane, t, meshes, flash } = scene;
     gl.viewport(0, 0, canvas.width, canvas.height);
     const bright = 1.05 + flash * 0.5;
-    gl.clearColor(0.04 + flash * 0.3, 0.20 + flash * 0.2, 0.30 + flash * 0.2, 1); // deep teal zenith, never black
+    // 6.3: the clear colour IS the sky zenith (per-shot tint top, else the
+    // ember PALETTE top) — otherwise a teal strip would seam against the
+    // ember sky wall at the top of the frame
+    const zen = (scene.tint && scene.tint.top) || PALETTE.skyTop;
+    gl.clearColor(zen[0] + flash * 0.3, zen[1] + flash * 0.2, zen[2] + flash * 0.2, 1);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     // camera: behind and above the plane, looking forward along heading
     const fx = Math.sin(plane.heading), fz = Math.cos(plane.heading);
