@@ -522,7 +522,12 @@ function frame(now) {
   else {
     const { mesh: carrierMesh, wireZ, flols } = buildCarrierMesh(game.carrierT);
     const crewMesh = buildCrewMesh(game.carrierT);
-    const flolsS = flolsState(plane, wireZ);
+    let flolsS = flolsState(plane, wireZ);
+    // Staged cover (supply run to the island strip): the FLOLS glide to the
+    // carrier is not this mission's path, and its live value drifts with
+    // carrierT (capture time varies 30–200s), so the cover kept showing a
+    // red LOW. Stage it deterministic: the plane IS on glide to the strip.
+    if (game.shotMode === 'play') flolsS = { color: 'amber', label: 'ON GLIDE' };
     // chase-camera eye (same formula as the renderer): particles too close
     // to it are culled inside particlesMesh
     const pfx = Math.sin(plane.heading), pfz = Math.cos(plane.heading);
