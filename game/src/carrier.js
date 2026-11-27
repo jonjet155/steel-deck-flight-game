@@ -26,15 +26,13 @@ export function buildCarrierMesh(t) {
   const L = CFG.deckLength, W = CFG.deckWidth, y = c.y, z0 = c.z - L / 2, z1 = c.z + L / 2;
   // hull
   box(mesh, -W / 2 - 4, y - 16, z0 - 6, W / 2 + 4, y, z1 + 6, [0.28, 0.30, 0.35]);
-  // 6.4 phosphorescent wake, BRIGHTER + LONGER: a glowing teal fan
-  // trailing 260 units behind the stern, widening as it falls behind, in
-  // three bands — the sea lights up for her, and it reads at judge size
-  tri(mesh, [-6, 0.6, z0 - 6], [6, 0.6, z0 - 6], [40, 0.6, z0 - 260], [0.12, 0.85, 0.78]);
-  tri(mesh, [-6, 0.6, z0 - 6], [40, 0.6, z0 - 260], [-40, 0.6, z0 - 260], [0.12, 0.85, 0.78]);
-  tri(mesh, [-4, 0.7, z0 - 6], [4, 0.7, z0 - 6], [22, 0.7, z0 - 190], [0.18, 1.0, 0.88]);
-  tri(mesh, [-4, 0.7, z0 - 6], [22, 0.7, z0 - 190], [-22, 0.7, z0 - 190], [0.18, 1.0, 0.88]);
-  tri(mesh, [-2, 0.8, z0 - 6], [2, 0.8, z0 - 6], [10, 0.8, z0 - 130], [0.25, 1.0, 0.92]);
-  tri(mesh, [-2, 0.8, z0 - 6], [10, 0.8, z0 - 130], [-10, 0.8, z0 - 130], [0.25, 1.0, 0.92]);
+  // 6.4 phosphorescent wake: a glowing teal fan trailing behind the stern.
+  // rev2: 190 long, ±32 wide, 6.3 colours — the first 6.4 attempt (260
+  // long, ±40, brighter bands) rendered as a giant cyan slab on the sea.
+  tri(mesh, [-6, 0.6, z0 - 6], [6, 0.6, z0 - 6], [32, 0.6, z0 - 190], [0.10, 0.75, 0.70]);
+  tri(mesh, [-6, 0.6, z0 - 6], [32, 0.6, z0 - 190], [-32, 0.6, z0 - 190], [0.10, 0.75, 0.70]);
+  tri(mesh, [-3, 0.7, z0 - 6], [3, 0.7, z0 - 6], [16, 0.7, z0 - 130], [0.16, 0.95, 0.85]);
+  tri(mesh, [-3, 0.7, z0 - 6], [16, 0.7, z0 - 130], [-16, 0.7, z0 - 130], [0.16, 0.95, 0.85]);
   // deck slab — bright steel grey so it reads in screenshots
   box(mesh, -W / 2, y, z0, W / 2, y + 2, z1, PALETTE.deckGrey);
   // landing strip (angled, amber centre line)
@@ -58,10 +56,11 @@ export function buildCarrierMesh(t) {
   }
   // 6.4 deck-edge light strings: warm glowing lamps every 7 units along
   // BOTH deck edges — the deck reads as a lit floating city at dusk, not
-  // a slab. Bigger and brighter than the old 14-unit amber boxes.
+  // a slab. rev2: SLIM lamps (1.0 wide, 1.6 tall) — the first version's
+  // 2.4-wide boxes rendered as a row of chunky yellow dice.
   for (let z = z0 + 6; z < z1; z += 7) {
-    box(mesh, -W / 2 - 1.2, y + 2, z, -W / 2 + 1.2, y + 4.2, z + 2.4, [1.0, 0.78, 0.25]);
-    box(mesh, W / 2 - 1.2, y + 2, z, W / 2 + 1.2, y + 4.2, z + 2.4, [1.0, 0.78, 0.25]);
+    box(mesh, -W / 2 - 0.5, y + 2, z, -W / 2 + 0.5, y + 3.6, z + 2, [1.0, 0.78, 0.25]);
+    box(mesh, W / 2 - 0.5, y + 2, z, W / 2 + 0.5, y + 3.6, z + 2, [1.0, 0.78, 0.25]);
   }
   // island superstructure (starboard)
   box(mesh, W / 2 - 14, y + 2, c.z - 30, W / 2 - 2, y + 26, c.z + 18, [0.55, 0.57, 0.62]);

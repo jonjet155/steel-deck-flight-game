@@ -143,13 +143,9 @@ function ringStarburstMesh(cx, cy, cz, heading, col, coreCol) {
   const rx = Math.cos(heading), rz = -Math.sin(heading);
   const p = (a, r) => [cx + rx * Math.cos(a) * r, cy + Math.sin(a) * r, cz + rz * Math.cos(a) * r];
   const tri = (a, b, d, cc) => { mesh.positions.push(...a, ...b, ...d); for (let i = 0; i < 3; i++) mesh.colors.push(...cc); };
-  // faint halo fan
-  let prev = null;
-  for (let i = 0; i <= 16; i++) {
-    const a = (i / 16) * Math.PI * 2;
-    if (prev) tri([cx, cy, cz], prev, p(a, 50), [col[0] * 0.4, col[1] * 0.4, col[2] * 0.4]);
-    prev = p(a, 50);
-  }
+  // 6.4 rev2: NO halo fan — the opaque fan rendered as a solid brown disc
+  // (~280 px) swallowing the ring, the sun and the storm wall. Rays +
+  // streaks + tip diamonds + core carry the burst on their own.
   const rays = 16;
   for (let i = 0; i < rays; i++) {
     const a = (i / rays) * Math.PI * 2;
@@ -178,7 +174,7 @@ function ringStarburstMesh(cx, cy, cz, heading, col, coreCol) {
     tri(d0, d2, d3, [1.0, 1.0, 0.95]);
   }
   // hot core disc
-  prev = null;
+  let prev = null;
   for (let i = 0; i <= 12; i++) {
     const a = (i / 12) * Math.PI * 2;
     if (prev) tri([cx, cy, cz], prev, p(a, 11), coreCol);
@@ -199,14 +195,9 @@ function ringStarburstMesh(cx, cy, cz, heading, col, coreCol) {
 function starburstMesh(cx, cy, cz, col, coreCol) {
   const mesh = { positions: [], colors: [] };
   const tri = (a, b, d, cc) => { mesh.positions.push(...a, ...b, ...d); for (let i = 0; i < 3; i++) mesh.colors.push(...cc); };
-  // faint halo fan first (drawn under the rays)
-  let prev = null;
-  for (let i = 0; i <= 16; i++) {
-    const a = (i / 16) * Math.PI * 2;
-    const p = [cx + Math.cos(a) * 46, cy + Math.sin(a) * 46, cz];
-    if (prev) tri([cx, cy, cz], prev, p, [col[0] * 0.45, col[1] * 0.45, col[2] * 0.45]);
-    prev = p;
-  }
+  // 6.4 rev2: NO halo fan — the first attempt's solid fan (opaque shader,
+  // no alpha) read as a giant brown balloon covering the sun and the ring.
+  // The burst is carried by rays + trail streaks + tip diamonds + core.
   const rays = 18;
   for (let i = 0; i < rays; i++) {
     const a = (i / rays) * Math.PI * 2;
@@ -238,7 +229,7 @@ function starburstMesh(cx, cy, cz, col, coreCol) {
     tri(t0, t2, t3, [1.0, 1.0, 0.95]);
   }
   // hot core disc
-  prev = null;
+  let prev = null;
   for (let i = 0; i <= 12; i++) {
     const a = (i / 12) * Math.PI * 2;
     const p = [cx + Math.cos(a) * 10, cy + Math.sin(a) * 10, cz];
@@ -668,12 +659,17 @@ function buildBoltMesh(bolt) {
 // the plane while CHAIN x3, built fresh each frame from the plane's pose.
 // It trails BEHIND the plane (never over the HUD or the ring ahead) and
 // fades from bright gold at the tail to deep ember at the end.
+// 6.4 rev2: SHORT (6-13 units) — the first version ran to 44 units, past
+// the chase camera (26 behind the plane); the triangles crossing the
+// camera plane smeared a giant yellow-white slab across the bottom of the
+// frame. A 6-13 trail stays in front of the camera and reads as a bright
+// streak dropping from the tail.
 function chainTrailMesh(plane) {
   const mesh = { positions: [], colors: [] };
   const fx = Math.sin(plane.heading), fz = Math.cos(plane.heading);
   const rx = fz, rz = -fx; // right vector
   const tri = (a, b, d, cc) => { mesh.positions.push(...a, ...b, ...d); for (let i = 0; i < 3; i++) mesh.colors.push(...cc); };
-  const segs = [[8, 5.0, [1.0, 0.75, 0.3]], [18, 3.6, [1.0, 0.55, 0.12]], [30, 2.2, [0.9, 0.35, 0.08]], [44, 0.8, [0.6, 0.2, 0.05]]];
+  const segs = [[6, 3.2, [1.0, 0.75, 0.3]], [9, 2.4, [1.0, 0.55, 0.12]], [11, 1.6, [0.9, 0.35, 0.08]], [13, 0.7, [0.6, 0.2, 0.05]]];
   for (let i = 0; i < segs.length - 1; i++) {
     const [d0, w0, c0] = segs[i], [d1, w1] = segs[i + 1];
     const a = [plane.pos[0] - fx * d0 + rx * w0, plane.pos[1], plane.pos[2] - fz * d0 + rz * w0];
