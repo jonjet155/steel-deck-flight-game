@@ -254,18 +254,21 @@ function vortexRingMesh(cx, cy, cz, heading) {
   // eye disc: a warm ember glow, calmer and brighter than the wall but
   // NEVER sun-yellow — the rev1 pale-yellow disc read as a giant sun and
   // swallowed the gold ring starburst. Centre (r 0..55) + a deeper ember
-  // band (r 55..88), both 25 units behind the ring plane
+  // band (r 55..88). back = -25 puts the disc 25 units BEHIND the ring
+  // plane (P subtracts forward*back, so positive back is TOWARD the
+  // camera) — rev2's +25 put the opaque disc IN FRONT of the ring
+  // starburst and hid it completely.
   let prev = null;
   for (let i = 0; i <= 20; i++) {
     const a = (i / 20) * Math.PI * 2;
-    const p = P(a, 55, 25);
-    if (prev) tri(P(0, 0, 25), prev, p, [0.80, 0.38, 0.14]);
+    const p = P(a, 55, -25);
+    if (prev) tri(P(0, 0, -25), prev, p, [0.80, 0.38, 0.14]);
     prev = p;
   }
   for (let i = 0; i < 20; i++) {
     const a0 = (i / 20) * Math.PI * 2, a1 = ((i + 1) / 20) * Math.PI * 2;
-    tri(P(a0, 55, 25), P(a1, 55, 25), P(a1, 88, 25), [0.66, 0.28, 0.10]);
-    tri(P(a0, 55, 25), P(a1, 88, 25), P(a0, 88, 25), [0.66, 0.28, 0.10]);
+    tri(P(a0, 55, -25), P(a1, 55, -25), P(a1, 88, -25), [0.66, 0.28, 0.10]);
+    tri(P(a0, 55, -25), P(a1, 88, -25), P(a0, 88, -25), [0.66, 0.28, 0.10]);
   }
   // ring wall: 28 dark wedges + ember inner rim + ragged outer spikes.
   // Rev2: wedge shades kept CLOSE (no fan/sunburst striping) and spikes
