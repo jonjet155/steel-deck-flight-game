@@ -31,6 +31,10 @@ export function applyShot(game, params) {
     plane.pos = [0, 48, -150];
     plane.heading = 0; plane.pitch = -0.05; plane.bank = 0.05;
     plane.speed = 95; plane.throttle = 0.45; plane.fuel = 41; plane.hookDown = true;
+    // 6.5: the trap flies RAJAWALI-9 in its strike livery (dark teal
+    // fuselage + white wings + yellow accents) — visibly a different
+    // aircraft from the ember Camar-7 on the cover
+    plane.livery = 'rajawali9';
     game.carrierT = 0;
     game.trapStaged = true;
     game.trapWire = 3;

@@ -108,12 +108,16 @@ export function makeRenderer(canvas) {
       quad(B, F, G, C, col); quad(D, C, G, H, col);
     };
     const c = plane.def.color;
-    // 6.3 livery, INVERTED from 6.2: the fuselage is EMBER-orange (the
-    // plane is "the ember plane" at 250 px), the wings are WHITE, the
-    // canopy stays dark glass. The old grey fuselage + amber spine is gone.
-    const emberFus = PALETTE.ember;        // fuselage sides
-    const emberTop = [1.0, 0.58, 0.16];    // fuselage top, sunlit ember
-    const emberBelly = [0.42, 0.16, 0.05]; // fuselage belly, shadowed ember
+    // 6.5 livery split: Camar-7 (default) is the ember plane; Rajawali-9
+    // (trap shot, plane.livery === 'rajawali9') flies a strike livery —
+    // DARK TEAL fuselage + white wings + yellow accents — so the trap
+    // plane reads as a DIFFERENT aircraft from the cover plane at 250 px.
+    // Roundels stay red-white on both.
+    const strike = plane.livery === 'rajawali9';
+    const emberFus = strike ? [0.06, 0.38, 0.42] : PALETTE.ember; // fuselage sides
+    const emberTop = strike ? [0.10, 0.55, 0.58] : [1.0, 0.58, 0.16]; // fuselage top, sunlit
+    const emberBelly = strike ? [0.02, 0.16, 0.18] : [0.42, 0.16, 0.05]; // fuselage belly, shadowed
+    const accent = strike ? [1.0, 0.85, 0.15] : PALETTE.amber; // wingtip bands / spine / chevron
     const whiteWing = [0.95, 0.95, 0.92];  // wing tops
     const wingUnder = [0.62, 0.62, 0.64];  // wing undersides
     const top = emberTop;
@@ -144,7 +148,7 @@ export function makeRenderer(canvas) {
     };
     for (let i = 0; i < st.length - 1; i++) {
       const A = ring(st[i]), B = ring(st[i + 1]);
-      const topCol = i === 0 ? PALETTE.ember : top; // ember nose cone
+      const topCol = i === 0 ? emberFus : top; // nose cone in fuselage colour
       quad(A.T, B.T, B.UR, A.UR, topCol);
       quad(A.T, A.UL, B.UL, B.T, topCol);
       quad(A.UL, A.LL, B.LL, B.UL, emberFus);
@@ -167,12 +171,12 @@ export function makeRenderer(canvas) {
     quad([1, 0, 1], [8.5, -0.3, -1.5], [8.5, -0.3, -3.5], [1, 0, -1.5], whiteWing);
     quad([-1, -0.32, 1], [-1, -0.32, -1.5], [-8.5, -0.62, -1.5], [-8.5, -0.62, -3.5], wingUnder);
     quad([1, -0.32, 1], [8.5, -0.62, -3.5], [8.5, -0.62, -1.5], [1, -0.32, -1.5], wingUnder);
-    tri([-8.5, -0.3, -3.5], [-9.5, -0.3, -3], [-9.5, -0.3, -1.8], PALETTE.ember);
-    tri([8.5, -0.3, -3.5], [9.5, -0.3, -1.8], [9.5, -0.3, -3], PALETTE.ember);
-    // ember wingtip bands: full-chord amber on the outer wing, so the
-    // wingtips read as orange flashes from the chase view
-    quad([-7.5, -0.3, -3.4], [-8.5, -0.3, -3.5], [-8.5, -0.3, -1.6], [-7.5, -0.3, -1.6], PALETTE.amber);
-    quad([7.5, -0.3, -3.4], [8.5, -0.3, -1.6], [8.5, -0.3, -3.5], [7.5, -0.3, -1.6], PALETTE.amber);
+    tri([-8.5, -0.3, -3.5], [-9.5, -0.3, -3], [-9.5, -0.3, -1.8], accent);
+    tri([8.5, -0.3, -3.5], [9.5, -0.3, -1.8], [9.5, -0.3, -3], accent);
+    // wingtip bands: full-chord accent on the outer wing, so the
+    // wingtips read as bright flashes from the chase view
+    quad([-7.5, -0.3, -3.4], [-8.5, -0.3, -3.5], [-8.5, -0.3, -1.6], [-7.5, -0.3, -1.6], accent);
+    quad([7.5, -0.3, -3.4], [8.5, -0.3, -1.6], [8.5, -0.3, -3.5], [7.5, -0.3, -1.6], accent);
     // red-white roundels on both wings: concentric discs lying on the wing
     // top surface (y follows the wing slope), visible from the chase view
     const wingY = (x) => -0.3 * (Math.abs(x) - 1) / 7.5 + 0.05;
@@ -216,20 +220,20 @@ export function makeRenderer(canvas) {
     };
     finRoundel(1);
     finRoundel(-1);
-    // Elang Badai livery, readable from directly behind: a WHITE spine
-    // stripe down the ember fuselage top — the 6.3 inversion of the old
-    // grey fuselage + amber spine
+    // Elang Badai livery, readable from directly behind: an ACCENT spine
+    // stripe down the fuselage top — white on the ember Camar-7, yellow
+    // on the teal Rajawali-9
     for (let i = 1; i < st.length - 1; i++) {
       const zA = st[i][0], yA = st[i][2] + 0.04;
       const zB = st[i + 1][0], yB = st[i + 1][2] + 0.04;
-      quad([-0.5, yA, zA], [0.5, yA, zA], [0.5, yB, zB], [-0.5, yB, zB], [0.95, 0.95, 0.92]);
+      quad([-0.5, yA, zA], [0.5, yA, zA], [0.5, yB, zB], [-0.5, yB, zB], strike ? accent : [0.95, 0.95, 0.92]);
     }
-    // deep-teal fuselage band across the spine just behind the canopy —
-    // the teal half of the ember-dusk identity, worn by every squadron plane
-    quad([-0.62, 1.13, 1.2], [0.62, 1.13, 1.2], [0.62, 1.13, 2.6], [-0.62, 1.13, 2.6], PALETTE.teal);
+    // fuselage band across the spine just behind the canopy — teal on the
+    // ember plane, yellow on the teal strike plane
+    quad([-0.62, 1.13, 1.2], [0.62, 1.13, 1.2], [0.62, 1.13, 2.6], [-0.62, 1.13, 2.6], strike ? accent : PALETTE.teal);
     // tail-fin chevron on both faces of the vertical fin
-    tri([0.07, 0.9, -6.3], [0.07, 2.1, -7.7], [0.07, 2.1, -6.5], PALETTE.amber);
-    tri([-0.07, 0.9, -6.3], [-0.07, 2.1, -6.5], [-0.07, 2.1, -7.7], PALETTE.amber);
+    tri([0.07, 0.9, -6.3], [0.07, 2.1, -7.7], [0.07, 2.1, -6.5], accent);
+    tri([-0.07, 0.9, -6.3], [-0.07, 2.1, -6.5], [-0.07, 2.1, -7.7], accent);
     // small white tail strobe at the fin base
     tri([-0.35, 0.3, -8.7], [0.35, 0.3, -8.7], [0, 0.9, -8.7], [1, 1, 1]);
     // propeller disc: a SMALL 16-segment spinning fan in dark greys — a
@@ -248,7 +252,7 @@ export function makeRenderer(canvas) {
         }
         prev = p;
       }
-      tri([0, 0.4, 8.6], [-0.5, 0.1, 7.9], [0.5, 0.1, 7.9], PALETTE.ember);
+      tri([0, 0.4, 8.6], [-0.5, 0.1, 7.9], [0.5, 0.1, 7.9], strike ? accent : PALETTE.ember);
     }
     // nav lights: small glowing POINTS at the wingtips, never big triangles
     const navDot = (x, col) => {

@@ -238,6 +238,55 @@ function starburstMesh(cx, cy, cz, col, coreCol) {
   }
   return mesh;
 }
+// 6.5 STORM-EYE VORTEX: a giant vertical annulus of storm wall in the
+// ring plane (facing the chase camera), centred on the flight path ahead
+// of the plane — dark slate wedges (r 88..215) with an ember-lit INNER
+// rim, around a bright calm EYE disc (r 0..88, drawn behind the wall so
+// the rim overlaps it). The wall's depth wobble is a smooth function of
+// angle, so shared wedge edges always match and the ring never gaps.
+function vortexRingMesh(cx, cy, cz, heading) {
+  const mesh = { positions: [], colors: [] };
+  const rx = Math.cos(heading), rz = -Math.sin(heading);
+  const fx = Math.sin(heading), fz = Math.cos(heading);
+  const tri = (a, b, d, cc) => { mesh.positions.push(...a, ...b, ...d); for (let i = 0; i < 3; i++) mesh.colors.push(...cc); };
+  const P = (a, r, back) => [cx + rx * Math.cos(a) * r - fx * back, cy + Math.sin(a) * r, cz + rz * Math.cos(a) * r - fz * back];
+  const backOf = (a) => Math.sin(a * 2) * 14;
+  // eye disc: bright calm centre (r 0..55) + a deeper ember band (r 55..88),
+  // both 25 units behind the ring plane
+  let prev = null;
+  for (let i = 0; i <= 20; i++) {
+    const a = (i / 20) * Math.PI * 2;
+    const p = P(a, 55, 25);
+    if (prev) tri(P(0, 0, 25), prev, p, [1.0, 0.66, 0.28]);
+    prev = p;
+  }
+  for (let i = 0; i < 20; i++) {
+    const a0 = (i / 20) * Math.PI * 2, a1 = ((i + 1) / 20) * Math.PI * 2;
+    tri(P(a0, 55, 25), P(a1, 55, 25), P(a1, 88, 25), [0.96, 0.48, 0.15]);
+    tri(P(a0, 55, 25), P(a1, 88, 25), P(a0, 88, 25), [0.96, 0.48, 0.15]);
+  }
+  // ring wall: 28 dark wedges + ember inner rim + ragged outer spikes
+  const segs = 28;
+  for (let i = 0; i < segs; i++) {
+    const a0 = (i / segs) * Math.PI * 2, a1 = ((i + 1) / segs) * Math.PI * 2;
+    const am = (a0 + a1) / 2;
+    const dark = i % 2 ? [0.10, 0.11, 0.24] : [0.15, 0.14, 0.30];
+    const o0 = P(a0, 215, backOf(a0)), o1 = P(a1, 215, backOf(a1));
+    const i0 = P(a0, 88, backOf(a0)), i1 = P(a1, 88, backOf(a1));
+    tri(o0, i0, i1, dark);
+    tri(o0, i1, o1, dark);
+    // ember inner rim: a bright strip just inside the wall, pulled 6
+    // units toward the camera so it sits proud of the dark wedges
+    const r0 = P(a0, 88, backOf(a0) - 6), r1 = P(a1, 88, backOf(a1) - 6);
+    const r2 = P(a1, 102, backOf(a1) - 6), r3 = P(a0, 102, backOf(a0) - 6);
+    tri(r0, r1, r2, [1.0, 0.50, 0.12]);
+    tri(r0, r2, r3, [1.0, 0.50, 0.12]);
+    // ragged outer peak so the silhouette is cloud, not a machined ring
+    const pk = P(am, 215 + (i % 3 === 0 ? 34 : 14), backOf(am));
+    tri(o0, o1, pk, dark);
+  }
+  return mesh;
+}
 if (SHOT === 'trap') {
   // two big bursts in clear sky + one gold burst low-left over the deck,
   // plus a scatter of static ember confetti above the deck
@@ -321,15 +370,32 @@ if (SHOT === 'play') {
   }
 }
 if (SHOT === 'storm') {
-  // storm wall: 3 TOWERING dark masses ahead (6.3: apex over one radius
-  // high), so the shot reads as a storm intercept with no deck anywhere
-  // in frame. REVISED: the first attempt (r 210-260 at z 620-800) filled
-  // the whole frame as flat walls — smaller radii, pushed further out,
-  // so ember sky shows between the masses.
-  stagedMeshes.push(buildStormCell(-320, 700, 190, 130));
-  stagedMeshes.push(buildStormCell(140, 880, 210, 140));
-  stagedMeshes.push(buildStormCell(520, 720, 180, 120));
-  // fly-through ring ahead of the plane, on the way into the wall
+  // 6.5 STORM-EYE VORTEX: the plane flies INSIDE the eye of boss The Eye.
+  // A GIANT RING of dark cloud wall (r 88..215) stands in the ring plane
+  // ~300 ahead, its INNER rim lit ember, around a BRIGHT CALM EYE disc —
+  // so at 250 px the shot reads as a storm RING around the plane, never a
+  // pyramid. Ragged cloud puffs ride the outer rim for volume; two low
+  // storm masses sit at the frame edges, clear of the eye.
+  {
+    const fx = Math.sin(plane.heading), fz = Math.cos(plane.heading);
+    const vcx = plane.pos[0] + fx * 300, vcy = plane.pos[1], vcz = plane.pos[2] + fz * 300;
+    stagedMeshes.push(vortexRingMesh(vcx, vcy, vcz, plane.heading));
+    const puffs = [];
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * Math.PI * 2 + 0.26;
+      const r = 212;
+      puffs.push({
+        x: vcx + Math.cos(plane.heading) * Math.cos(a) * r,
+        y: vcy + Math.sin(a) * r,
+        z: vcz - Math.sin(plane.heading) * Math.cos(a) * r,
+        s: 26 + (i % 3) * 8, lit: i % 4 === 0, speed: 0,
+      });
+    }
+    stagedMeshes.push(...buildCloudMeshes(puffs, 'storm'));
+    stagedMeshes.push(buildStormCell(-420, 900, 150, 120));
+    stagedMeshes.push(buildStormCell(480, 900, 150, 120));
+  }
+  // fly-through ring ahead of the plane, on the way into the eye
   {
     const fx = Math.sin(plane.heading), fz = Math.cos(plane.heading);
     const rcx = plane.pos[0] + fx * 280, rcy = plane.pos[1], rcz = plane.pos[2] + fz * 280;
@@ -746,7 +812,7 @@ function frame(now) {
   else if (gs.state === 'map') { drawMapScreen(); }
   else {
     const { mesh: carrierMesh, wireZ, flols } = buildCarrierMesh(game.carrierT);
-    const crewMesh = buildCrewMesh(game.carrierT);
+    const crewMesh = buildCrewMesh(game.carrierT, game.trapStaged);
     let flolsS = flolsState(plane, wireZ);
     // Staged cover (supply run to the island strip): the FLOLS glide to the
     // carrier is not this mission's path, and its live value drifts with
@@ -757,6 +823,16 @@ function frame(now) {
     // to it are culled inside particlesMesh
     const pfx = Math.sin(plane.heading), pfz = Math.cos(plane.heading);
     const eye = [plane.pos[0] - pfx * 26, plane.pos[1] + 9, plane.pos[2] - pfz * 26];
+    // 6.5: in the storm shot the vortex IS the storm — a global cell
+    // sitting on the flight axis ahead would poke a dark pyramid through
+    // the calm eye, so those cells are dropped from this shot only
+    const stormList = game.stormStaged ? stormMeshes.filter((_, i) => {
+      const cl = cells[i];
+      const dz = cl.z - plane.pos[2];
+      if (dz <= 0) return true;
+      const axisX = plane.pos[0] + Math.sin(plane.heading) * dz;
+      return Math.abs(cl.x - axisX) > 130;
+    }) : stormMeshes;
     const meshes = [
       { mesh: seaMesh, bright: 1.0 },
       ...islandMeshes.map((m) => ({ mesh: m, bright: 1.05 })),
@@ -768,7 +844,7 @@ function frame(now) {
       { mesh: carrierMesh, bright: 1.15 },
       { mesh: crewMesh, bright: 1.2 },
       ...cloudMeshes.map((m) => ({ mesh: m, bright: 1.0 })),
-      ...stormMeshes.map((m) => ({ mesh: m, bright: 1.0 })),
+      ...stormList.map((m) => ({ mesh: m, bright: 1.0 })),
       ...stagedMeshes.map((m) => ({ mesh: m, bright: 1.0 })),
       { mesh: buildRainMesh(weather, plane), bright: 1.0 },
       { mesh: buildBoltMesh(game.bolt), bright: 1.6 },

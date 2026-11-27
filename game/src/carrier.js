@@ -183,19 +183,28 @@ export function buildCarrierMesh(t) {
   return { mesh, wireZ, flols: { x: fx, y: y + 7, z: fz } };
 }
 
-export function buildCrewMesh(t) {
+export function buildCrewMesh(t, cheer) {
   // deck-crew figures: tall enough to read from the chase camera — hi-vis
   // vest body + white helmet, bobbing slightly, working the wires and the
   // parked aircraft. Spots stay clear of the HALILINTAR deck lettering.
+  // 6.5: in the staged trap shot the crew CHEERS — both arms raised
+  // (thin bright sticks above the shoulders) + 2 extra figures near the
+  // island, so the celebration involves people, not just fireworks.
   const mesh = { positions: [], colors: [] };
   const c = carrierState(t);
   const crewCols = [[1, 0.55, 0.1], [1, 0.85, 0.1], [0.2, 0.8, 1], [0.3, 0.9, 0.4], [1, 0.55, 0.1]];
   const spots = [[-13, c.z + 34], [13, c.z + 52], [-12, c.z + 78], [12, c.z - 8], [-12, c.z - 58]];
+  if (cheer) spots.push([12, c.z - 20], [12, c.z + 8]);
   spots.forEach(([x, z], i) => {
     const bob = Math.sin(t * 2 + i * 1.7) * 0.4;
     const col = crewCols[i % crewCols.length];
     box(mesh, x - 1.2, c.y + 2 + bob, z - 1.2, x + 1.2, c.y + 8.5 + bob, z + 1.2, col);
     box(mesh, x - 1.3, c.y + 8.5 + bob, z - 1.3, x + 1.3, c.y + 10.8 + bob, z + 1.3, [0.95, 0.95, 0.92]);
+    if (cheer) {
+      // raised arms: thin bright sticks above the shoulders, waving
+      box(mesh, x - 2.1, c.y + 8 + bob, z - 0.5, x - 1.3, c.y + 13.5 + bob, z + 0.5, [1.0, 0.85, 0.1]);
+      box(mesh, x + 1.3, c.y + 8 + bob, z - 0.5, x + 2.1, c.y + 13.5 + bob, z + 0.5, [1.0, 0.85, 0.1]);
+    }
   });
   return mesh;
 }
